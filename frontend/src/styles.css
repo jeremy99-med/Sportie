@@ -1,0 +1,11 @@
+body {
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+.eyebrow {
+  color: var(--sp-yellow);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}

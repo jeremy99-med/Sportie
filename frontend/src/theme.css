@@ -1,0 +1,164 @@
+/*
+ * Sportie theme — dark navy editor palette.
+ * Colors sampled from the VS Code theme used while building Sportie.
+ * Import after Bootstrap so these overrides win.
+ */
+
+:root,
+[data-bs-theme="dark"] {
+  /* Surfaces */
+  --sp-bg: #131722;            /* editor background */
+  --sp-bg-sidebar: #11141d;    /* explorer / sidebar */
+  --sp-bg-elevated: #1a1f2c;   /* cards, panels */
+  --sp-bg-highlight: #1e2331;  /* current-line highlight, hover */
+  --sp-border: #262c3b;        /* dividers, indent guides */
+
+  /* Text */
+  --sp-text: #c9d1e3;          /* default foreground */
+  --sp-text-bright: #ffffff;   /* active line number, headings */
+  --sp-text-muted: #8a93a8;    /* breadcrumbs, tab labels */
+  --sp-text-subtle: #4b5370;   /* line numbers */
+  --sp-text-comment: #5c6788;  /* comments (italic) */
+
+  /* Syntax-inspired text colors */
+  --sp-yellow: #f6d860;        /* keywords: import, from, if */
+  --sp-cyan: #5ccfe6;          /* def, function calls */
+  --sp-blue: #7fb4ff;          /* modules, identifiers: os, django */
+  --sp-green: #b8e986;         /* strings */
+  --sp-red: #ff6b81;           /* properties: environ, argv */
+  --sp-orange: #e8825a;        /* accent (sparkle icon) */
+  --sp-purple: #c39bff;        /* constants, numbers */
+
+  /* Semantic roles */
+  --sp-accent: var(--sp-yellow);
+  --sp-accent-alt: var(--sp-cyan);
+  --sp-link: var(--sp-cyan);
+  --sp-success: var(--sp-green);
+  --sp-danger: var(--sp-red);
+  --sp-warning: var(--sp-orange);
+  --sp-focus-ring: rgba(92, 207, 230, 0.35);
+
+  --sp-font-sans: Inter, system-ui, sans-serif;
+  --sp-font-mono: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+
+  /* Bootstrap mapping */
+  --bs-body-bg: var(--sp-bg);
+  --bs-body-color: var(--sp-text);
+  --bs-body-font-family: var(--sp-font-sans);
+  --bs-emphasis-color: var(--sp-text-bright);
+  --bs-secondary-color: var(--sp-text-muted);
+  --bs-tertiary-color: var(--sp-text-subtle);
+  --bs-secondary-bg: var(--sp-bg-elevated);
+  --bs-tertiary-bg: var(--sp-bg-highlight);
+  --bs-border-color: var(--sp-border);
+  --bs-heading-color: var(--sp-text-bright);
+  --bs-link-color: var(--sp-link);
+  --bs-link-color-rgb: 92, 207, 230;
+  --bs-link-hover-color: var(--sp-yellow);
+  --bs-link-hover-color-rgb: 246, 216, 96;
+  --bs-code-color: var(--sp-red);
+  --bs-primary: var(--sp-cyan);
+  --bs-primary-rgb: 92, 207, 230;
+  --bs-success: var(--sp-green);
+  --bs-success-rgb: 184, 233, 134;
+  --bs-warning: var(--sp-yellow);
+  --bs-warning-rgb: 246, 216, 96;
+  --bs-danger: var(--sp-red);
+  --bs-danger-rgb: 255, 107, 129;
+  --bs-info: var(--sp-blue);
+  --bs-info-rgb: 127, 180, 255;
+  --bs-secondary-color-rgb: 138, 147, 168;
+  --bs-focus-ring-color: var(--sp-focus-ring);
+
+  color-scheme: dark;
+}
+
+body {
+  background: var(--sp-bg);
+  color: var(--sp-text);
+  font-family: var(--sp-font-sans);
+}
+
+::selection {
+  background: rgba(127, 180, 255, 0.25);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--sp-font-mono);
+}
+
+/* Text color utilities */
+.text-sp-yellow { color: var(--sp-yellow) !important; }
+.text-sp-cyan { color: var(--sp-cyan) !important; }
+.text-sp-blue { color: var(--sp-blue) !important; }
+.text-sp-green { color: var(--sp-green) !important; }
+.text-sp-red { color: var(--sp-red) !important; }
+.text-sp-orange { color: var(--sp-orange) !important; }
+.text-sp-purple { color: var(--sp-purple) !important; }
+.text-sp-muted { color: var(--sp-text-muted) !important; }
+.text-sp-comment { color: var(--sp-text-comment) !important; font-style: italic; }
+
+/* Surface utilities */
+.bg-sp { background-color: var(--sp-bg) !important; }
+.bg-sp-sidebar { background-color: var(--sp-bg-sidebar) !important; }
+.bg-sp-elevated { background-color: var(--sp-bg-elevated) !important; }
+.bg-sp-highlight { background-color: var(--sp-bg-highlight) !important; }
+
+/* Bootstrap components */
+.card {
+  --bs-card-bg: var(--sp-bg-elevated);
+  --bs-card-border-color: var(--sp-border);
+  --bs-card-color: var(--sp-text);
+}
+
+.card:hover {
+  background-color: var(--sp-bg-highlight);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--sp-cyan);
+  --bs-btn-border-color: var(--sp-cyan);
+  --bs-btn-color: var(--sp-bg);
+  --bs-btn-hover-bg: var(--sp-yellow);
+  --bs-btn-hover-border-color: var(--sp-yellow);
+  --bs-btn-hover-color: var(--sp-bg);
+  --bs-btn-active-bg: var(--sp-yellow);
+  --bs-btn-active-border-color: var(--sp-yellow);
+  --bs-btn-active-color: var(--sp-bg);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--sp-cyan);
+  --bs-btn-border-color: var(--sp-cyan);
+  --bs-btn-hover-bg: var(--sp-cyan);
+  --bs-btn-hover-border-color: var(--sp-cyan);
+  --bs-btn-hover-color: var(--sp-bg);
+}
+
+.badge.text-bg-light {
+  background-color: var(--sp-bg-highlight) !important;
+  color: var(--sp-blue) !important;
+  font-family: var(--sp-font-mono);
+  font-weight: 500;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--sp-bg-sidebar);
+  border-color: var(--sp-border);
+  color: var(--sp-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--sp-bg-sidebar);
+  border-color: var(--sp-cyan);
+  color: var(--sp-text);
+  box-shadow: 0 0 0 0.2rem var(--sp-focus-ring);
+}
+
+.form-control::placeholder {
+  color: var(--sp-text-subtle);
+}
