@@ -1,0 +1,18 @@
+{
+  "NBA": {
+    "always": [
+      {"name": "Nikola Jokić", "team": "DEN"},
+      {"name": "Luka Dončić", "team": "LAL"},
+      {"name": "Victor Wembanyama", "team": "SAS"}
+    ],
+    "never": []
+  },
+  "NFL": {
+    "always": [
+      {"name": "Patrick Mahomes", "team": "KC"},
+      {"name": "Lamar Jackson", "team": "BAL"},
+      {"name": "Josh Allen", "team": "BUF"}
+    ],
+    "never": []
+  }
+}
