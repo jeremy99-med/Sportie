@@ -2,7 +2,7 @@ from datetime import date
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.community_game_ranker.services import ingest
+from apps.community_game_ranker.services import ingest, ranking
 
 
 class Command(BaseCommand):
@@ -27,10 +27,8 @@ class Command(BaseCommand):
         if backfill:
             self._report("backfill", ingest.backfill_finished(day, sports=sports))
         self._report("ingest", ingest.ingest_day(day, sports=sports))
-
-        # Phase 3 hook: score the day here once services/ranking.py exists, e.g.
-        #   from apps.community_game_ranker.services.ranking import score_day
-        #   score_day(day)
+        for s in sports:
+            self.stdout.write(f"scored {s}: {ranking.score_day(day, s)} games")
 
     def _report(self, label, results):
         for sport, s in results.items():

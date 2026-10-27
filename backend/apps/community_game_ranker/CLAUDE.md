@@ -14,7 +14,7 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
 - `integrations/`: one module per provider (`balldontlie.py`, `sportsdata.py`, `weatherapi.py`).
   These are thin HTTP clients that return normalized dicts and never touch the ORM.
   See `.claude/docs/external-apis.md`.
-- `services/`: `stars.py` (`pick_stars`, star sync with overrides), `scoring.py` (pure functions, one per factor plus a combiner),
+- `services/`: `stars.py` (`pick_stars`, star sync with overrides), `scoring.py` (pure functions, one per factor plus a combiner), `ranking.py` (DB inputs, `score_day`, `ranked_games`),
   `ingest.py` (cached_call, ingest_day, backfill_finished, sync_rosters; the only module using both clients and the ORM; run with `python manage.py ingest_ranker --date YYYY-MM-DD [--sport NBA] [--backfill]`), `ai_assist.py` (Claude call for playoff
   implications). See `.claude/docs/importance-scoring.md`.
 - `tests/`: mirrors the modules (`test_scoring.py`, `test_integrations.py`, `test_votes.py`, ...).
