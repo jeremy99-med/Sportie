@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "apps.video_analyzer.apps.VideoAnalyzerConfig",
     "apps.community_game_ranker.apps.CommunityGameRankerConfig",
+    # Keep last: it builds auth groups from the other apps' permissions after migrate.
+    "apps.accounts.apps.AccountsConfig",
 ]
 
 MIDDLEWARE = [

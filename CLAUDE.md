@@ -18,6 +18,7 @@ backend/                 Django 5.2 project (run commands from here)
   config/                settings.py, urls.py
   apps/community_game_ranker/   models, services/ (scoring), integrations/ (API clients), tests/
   apps/video_analyzer/          models, services/ (pipeline stages), tests/
+  apps/accounts/                shared: auth groups (Normal/Admin/Superadmin), no models
 frontend/src/features/   community-game-ranker/, video-analyzer/  (React 19 + Vite + Bootstrap 5)
 frontend/src/theme.css   design tokens (--sp-*), dark navy palette
 ```
@@ -50,7 +51,7 @@ cd backend && python manage.py check
 cd frontend && npm run dev | npm run build
 ```
 
-App labels: `community_game_ranker`, `video_analyzer`.
+App labels: `community_game_ranker`, `video_analyzer`, `accounts`.
 
 ## Milestones (2026)
 
