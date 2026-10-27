@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "id": 237,
+      "first_name": "LeBron",
+      "last_name": "James",
+      "position": "F",
+      "height": null,
+      "weight": null,
+      "jersey_number": null,
+      "college": null,
+      "country": null,
+      "draft_year": null,
+      "draft_round": null,
+      "draft_number": null,
+      "team": {
+        "id": 14,
+        "conference": "West",
+        "division": "X",
+        "city": "Los Angeles",
+        "name": "Lakers",
+        "full_name": "Los Angeles Lakers",
+        "abbreviation": "LAL"
+      }
+    }
+  ],
+  "meta": {
+    "per_page": 100
+  }
+}

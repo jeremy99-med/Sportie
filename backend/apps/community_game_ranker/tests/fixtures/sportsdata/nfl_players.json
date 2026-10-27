@@ -1,0 +1,42 @@
+[
+  {
+    "PlayerID": 9001,
+    "FirstName": "Patrick",
+    "LastName": "Mahomes",
+    "Name": "Patrick Mahomes",
+    "Team": "KC",
+    "Position": "QB"
+  },
+  {
+    "PlayerID": 9002,
+    "FirstName": "Josh",
+    "LastName": "Allen",
+    "Name": "Josh Allen",
+    "Team": "BUF",
+    "Position": "QB"
+  },
+  {
+    "PlayerID": 9003,
+    "FirstName": "Aidan",
+    "LastName": "Hutchinson",
+    "Name": "Aidan Hutchinson",
+    "Team": "DET",
+    "Position": "DE"
+  },
+  {
+    "PlayerID": 9004,
+    "FirstName": "Puka",
+    "LastName": "Nacua",
+    "Name": "Puka Nacua",
+    "Team": "LA",
+    "Position": "WR"
+  },
+  {
+    "PlayerID": 9005,
+    "FirstName": "Free",
+    "LastName": "Agent",
+    "Name": "Free Agent",
+    "Team": null,
+    "Position": "WR"
+  }
+]

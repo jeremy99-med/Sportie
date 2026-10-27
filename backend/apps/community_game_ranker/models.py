@@ -185,6 +185,8 @@ class Injury(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="injuries")
     game = models.ForeignKey(GameLog, on_delete=models.CASCADE, related_name="injuries")
     status = models.CharField(max_length=20, choices=Status.choices)
+    # True when the provider hid the real status (trial data) and `status` is our assumption.
+    status_estimated = models.BooleanField(default=False)
     description = models.TextField(blank=True)
     reported_at = models.DateTimeField()
 

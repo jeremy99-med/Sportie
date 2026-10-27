@@ -1,0 +1,38 @@
+[
+  {
+    "InjuryID": 1,
+    "Season": 2026,
+    "Week": 8,
+    "PlayerID": 9001,
+    "Name": "Patrick Mahomes",
+    "Team": "KC",
+    "Position": "QB",
+    "Status": "Questionable",
+    "BodyPart": "Ankle",
+    "PracticeDescription": "Limited"
+  },
+  {
+    "InjuryID": 2,
+    "Season": 2026,
+    "Week": 8,
+    "PlayerID": 9002,
+    "Name": "Josh Allen",
+    "Team": "BUF",
+    "Position": "QB",
+    "Status": "Probable",
+    "BodyPart": "Shoulder",
+    "PracticeDescription": "Full"
+  },
+  {
+    "InjuryID": 3,
+    "Season": 2026,
+    "Week": 8,
+    "PlayerID": 9003,
+    "Name": "Aidan Hutchinson",
+    "Team": "DET",
+    "Position": "DE",
+    "Status": "Out",
+    "BodyPart": "Knee",
+    "PracticeDescription": "DNP"
+  }
+]
