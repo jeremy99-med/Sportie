@@ -1,0 +1,47 @@
+[
+  {
+    "GameKey": "202608A",
+    "Season": 2026,
+    "SeasonType": 1,
+    "Week": 8,
+    "Date": "2026-11-01T13:00:00",
+    "DateTimeUTC": "2026-11-01T18:00:00",
+    "Status": "Scheduled",
+    "HomeTeam": "KC",
+    "AwayTeam": "BUF",
+    "HomeScore": null,
+    "AwayScore": null,
+    "GlobalHomeTeamID": null,
+    "GlobalAwayTeamID": null
+  },
+  {
+    "GameKey": "202608B",
+    "Season": 2026,
+    "SeasonType": 1,
+    "Week": 8,
+    "Date": "2026-11-01T13:00:00",
+    "DateTimeUTC": "2026-11-01T18:00:00",
+    "Status": "Scheduled",
+    "HomeTeam": "DET",
+    "AwayTeam": "LA",
+    "HomeScore": null,
+    "AwayScore": null,
+    "GlobalHomeTeamID": null,
+    "GlobalAwayTeamID": null
+  },
+  {
+    "GameKey": "202608C",
+    "Season": 2026,
+    "SeasonType": 1,
+    "Week": 8,
+    "Date": "2026-11-01T13:00:00",
+    "DateTimeUTC": "2026-11-01T18:00:00",
+    "Status": "Final",
+    "HomeTeam": "JAC",
+    "AwayTeam": "WSH",
+    "HomeScore": 20,
+    "AwayScore": 17,
+    "GlobalHomeTeamID": null,
+    "GlobalAwayTeamID": null
+  }
+]

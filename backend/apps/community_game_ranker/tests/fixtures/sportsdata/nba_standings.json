@@ -1,0 +1,34 @@
+[
+  {
+    "Season": 2027,
+    "Key": "DEN",
+    "Wins": 5,
+    "Losses": 2,
+    "ConferenceRank": 2,
+    "GamesBack": 1.0
+  },
+  {
+    "Season": 2027,
+    "Key": "PHO",
+    "Wins": 3,
+    "Losses": 4,
+    "ConferenceRank": 9,
+    "GamesBack": 3.0
+  },
+  {
+    "Season": 2027,
+    "Key": "LAL",
+    "Wins": 4,
+    "Losses": 3,
+    "ConferenceRank": 5,
+    "GamesBack": 2.0
+  },
+  {
+    "Season": 2027,
+    "Key": "GS",
+    "Wins": 4,
+    "Losses": 3,
+    "ConferenceRank": 6,
+    "GamesBack": 2.0
+  }
+]

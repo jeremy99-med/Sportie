@@ -1,0 +1,53 @@
+{
+  "location": {
+    "name": "Kansas City",
+    "lat": 39.05,
+    "lon": -94.48
+  },
+  "forecast": {
+    "forecastday": [
+      {
+        "date": "2026-11-01",
+        "day": {},
+        "hour": [
+          {
+            "time_epoch": 1793552400,
+            "time": "2026-11-01 16:00",
+            "temp_c": 7.0,
+            "precip_mm": 0.0,
+            "snow_cm": 0.0,
+            "wind_kph": 14.0,
+            "condition": {
+              "text": "Cloudy",
+              "code": 1183
+            }
+          },
+          {
+            "time_epoch": 1793556000,
+            "time": "2026-11-01 17:00",
+            "temp_c": 6.5,
+            "precip_mm": 1.2,
+            "snow_cm": 0.0,
+            "wind_kph": 22.5,
+            "condition": {
+              "text": "Light rain",
+              "code": 1183
+            }
+          },
+          {
+            "time_epoch": 1793559600,
+            "time": "2026-11-01 18:00",
+            "temp_c": 6.0,
+            "precip_mm": 0.4,
+            "snow_cm": 0.0,
+            "wind_kph": 20.0,
+            "condition": {
+              "text": "Light rain",
+              "code": 1183
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

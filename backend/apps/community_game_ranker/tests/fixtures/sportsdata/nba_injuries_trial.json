@@ -1,0 +1,28 @@
+[
+  {
+    "PlayerID": 20001856,
+    "Status": "Active",
+    "TeamID": 9,
+    "Team": "BOS",
+    "Position": "SG",
+    "FirstName": "Derrick",
+    "LastName": "White",
+    "InjuryStatus": "Scrambled",
+    "InjuryBodyPart": "Scrambled",
+    "InjuryStartDate": "2026-10-27T00:00:00",
+    "InjuryNotes": "Scrambled"
+  },
+  {
+    "PlayerID": 20000571,
+    "Status": "Active",
+    "TeamID": 20,
+    "Team": "DEN",
+    "Position": "C",
+    "FirstName": "Nikola",
+    "LastName": "Jokic",
+    "InjuryStatus": "Out",
+    "InjuryBodyPart": "Knee",
+    "InjuryStartDate": "2026-10-25T00:00:00",
+    "InjuryNotes": "Scrambled"
+  }
+]

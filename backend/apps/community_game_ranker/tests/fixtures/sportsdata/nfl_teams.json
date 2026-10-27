@@ -1,0 +1,17 @@
+[
+  {
+    "TeamID": 17,
+    "Key": "KC",
+    "FullName": "Kansas City Chiefs"
+  },
+  {
+    "TeamID": 26,
+    "Key": "JAX",
+    "FullName": "Jacksonville Jaguars"
+  },
+  {
+    "TeamID": 32,
+    "Key": "LA",
+    "FullName": "Los Angeles Rams"
+  }
+]

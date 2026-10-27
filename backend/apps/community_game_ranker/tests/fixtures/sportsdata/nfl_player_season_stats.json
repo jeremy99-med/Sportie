@@ -1,0 +1,18 @@
+[
+  {
+    "PlayerID": 9001,
+    "Name": "Patrick Mahomes",
+    "Team": "KC",
+    "Position": "QB",
+    "Played": 7,
+    "FantasyPoints": 160.4
+  },
+  {
+    "PlayerID": 9006,
+    "Name": "Travis Kelce",
+    "Team": "KC",
+    "Position": "TE",
+    "Played": 7,
+    "FantasyPoints": 95.2
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "Season": 2026,
+    "Team": "KC",
+    "Wins": 6,
+    "Losses": 1,
+    "Ties": 0,
+    "ConferenceRank": 1
+  },
+  {
+    "Season": 2026,
+    "Team": "BUF",
+    "Wins": 5,
+    "Losses": 2,
+    "Ties": 0,
+    "ConferenceRank": 3
+  },
+  {
+    "Season": 2026,
+    "Team": "DET",
+    "Wins": 5,
+    "Losses": 2,
+    "Ties": 0,
+    "ConferenceRank": 2
+  },
+  {
+    "Season": 2026,
+    "Team": "LA",
+    "Wins": 4,
+    "Losses": 3,
+    "Ties": 0,
+    "ConferenceRank": 6
+  },
+  {
+    "Season": 2026,
+    "Team": "JAC",
+    "Wins": 3,
+    "Losses": 4,
+    "Ties": 0,
+    "ConferenceRank": 9
+  },
+  {
+    "Season": 2026,
+    "Team": "WSH",
+    "Wins": 2,
+    "Losses": 5,
+    "Ties": 0,
+    "ConferenceRank": 12
+  }
+]

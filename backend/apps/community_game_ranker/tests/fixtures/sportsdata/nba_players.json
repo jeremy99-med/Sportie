@@ -1,0 +1,16 @@
+[
+  {
+    "PlayerID": 20000571,
+    "FirstName": "Nikola",
+    "LastName": "Jokic",
+    "Team": "DEN",
+    "Position": "C"
+  },
+  {
+    "PlayerID": 20000999,
+    "FirstName": "Role",
+    "LastName": "Player",
+    "Team": "PHO",
+    "Position": "G"
+  }
+]

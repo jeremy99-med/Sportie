@@ -1,0 +1,22 @@
+[
+  {
+    "PlayerID": 1,
+    "Name": "Nikola Jokic",
+    "Team": "DEN",
+    "Position": "C",
+    "Games": 10,
+    "Points": 270,
+    "Rebounds": 130,
+    "Assists": 100
+  },
+  {
+    "PlayerID": 2,
+    "Name": "Bench Guy",
+    "Team": "DEN",
+    "Position": "G",
+    "Games": 2,
+    "Points": 60,
+    "Rebounds": 10,
+    "Assists": 10
+  }
+]
