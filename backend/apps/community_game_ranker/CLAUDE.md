@@ -4,13 +4,18 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
 
 ## Layout
 
-- `models.py`: Sport, Team, Player, Stadium, GameLog, Injury, WeatherCondition, Rivalry,
+- `models.py`: Sport, Team, Player, Stadium, TeamStanding, GameLog, Injury, WeatherCondition, Rivalry,
   ExternalAPIMetadata, CommunityVote. Full field list: `.claude/docs/data-model.md`.
+- `seed/`: reference data. Sports, NBA/NFL teams, stadiums (coordinates for weather lookups),
+  and rivalries load in migration `0003_seed_reference_data`, so edit the JSON and add a new
+  data migration for changes. `stars.json` holds per-sport `always` / `never` star overrides (at most 5
+  stars per team in total) and loads with `python manage.py seed_stars`. Computed stars come from
+  `python manage.py sync_rosters` (rosters, trades, and `pick_stars` from season stats).
 - `integrations/`: one module per provider (`balldontlie.py`, `sportsdata.py`, `weatherapi.py`).
   These are thin HTTP clients that return normalized dicts and never touch the ORM.
   See `.claude/docs/external-apis.md`.
-- `services/`: `scoring.py` (pure functions, one per factor plus a combiner),
-  `ingest.py` (calls the clients and upserts models), `ai_assist.py` (Claude call for playoff
+- `services/`: `stars.py` (`pick_stars`, star sync with overrides), `scoring.py` (pure functions, one per factor plus a combiner),
+  `ingest.py` (cached_call, ingest_day, backfill_finished, sync_rosters; the only module using both clients and the ORM; run with `python manage.py ingest_ranker --date YYYY-MM-DD [--sport NBA] [--backfill]`), `ai_assist.py` (Claude call for playoff
   implications). See `.claude/docs/importance-scoring.md`.
 - `tests/`: mirrors the modules (`test_scoring.py`, `test_integrations.py`, `test_votes.py`, ...).
 

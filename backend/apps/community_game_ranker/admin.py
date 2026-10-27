@@ -10,6 +10,7 @@ from .models import (
     Sport,
     Stadium,
     Team,
+    TeamStanding,
     WeatherCondition,
 )
 
@@ -37,6 +38,12 @@ class PlayerAdmin(admin.ModelAdmin):
     list_display = ("name", "team", "position", "is_star")
     list_filter = ("is_star", "team__sport")
     search_fields = ("name",)
+
+
+@admin.register(TeamStanding)
+class TeamStandingAdmin(admin.ModelAdmin):
+    list_display = ("team", "season", "wins", "losses", "conference_rank")
+    list_filter = ("season", "team__sport")
 
 
 @admin.register(GameLog)
@@ -70,5 +77,5 @@ class ExternalAPIMetadataAdmin(admin.ModelAdmin):
 
 @admin.register(CommunityVote)
 class CommunityVoteAdmin(admin.ModelAdmin):
-    list_display = ("user", "game", "category", "value", "created_at")
-    list_filter = ("category", "value")
+    list_display = ("user", "game", "value", "created_at")
+    list_filter = ("value",)
