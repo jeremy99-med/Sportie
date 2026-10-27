@@ -10,5 +10,10 @@ export default defineConfig({
       usePolling: true,
       interval: 300,
     },
+    // Send API calls to Django through this origin so session cookies and CSRF work
+    // without CORS. Docker sets the target to the backend service.
+    proxy: {
+      "/api": process.env.VITE_API_TARGET || "http://localhost:8000",
+    },
   },
 });

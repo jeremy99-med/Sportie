@@ -19,6 +19,20 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
   implications). See `.claude/docs/importance-scoring.md`.
 - `tests/`: mirrors the modules (`test_scoring.py`, `test_integrations.py`, `test_votes.py`, ...).
 
+## API (`/api/ranker/`, auth at `/api/auth/`)
+
+- `GET games/?date=YYYY-MM-DD&sport=NBA`: the day's games (US Eastern, default today), ranked by
+  `services/ranking.ranked_games`, with breakdown, star injuries, weather, rivalry, `net_votes`, and
+  `my_vote`. Public.
+- `GET games/<id>/`: one game. Public.
+- `POST games/<id>/vote/` with `{"value": 1 | -1}`: signed-in users only, CSRF-protected, throttled
+  (`votes`, 30/min). Logic lives in `services/votes.cast_vote`, which re-scores the game.
+- Auth (`apps/accounts`): `csrf/`, `me/`, `register/`, `login/`, `logout/`. These use Django
+  sessions. Register and login are rate-limited per IP.
+- Frontend helpers: `frontend/src/features/community-game-ranker/api.js` (games, votes) and
+  `frontend/src/shared/auth/api.js`. Both go through `frontend/src/shared/http.js`, which handles
+  CSRF. In dev, Vite proxies `/api` to Django (`VITE_API_TARGET`).
+
 ## Rules
 
 - Scoring functions are pure: plain values in, a float out, no DB access. That keeps them cheap
