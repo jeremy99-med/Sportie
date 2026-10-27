@@ -1,0 +1,17 @@
+[
+  {"sport": "NBA", "teams": ["BOS", "LAL"], "intensity": 5, "name": "Celtics-Lakers"},
+  {"sport": "NBA", "teams": ["BOS", "PHI"], "intensity": 4, "name": "Celtics-76ers"},
+  {"sport": "NBA", "teams": ["CHI", "DET"], "intensity": 4, "name": "Bulls-Pistons"},
+  {"sport": "NBA", "teams": ["NYK", "IND"], "intensity": 4, "name": "Knicks-Pacers"},
+  {"sport": "NBA", "teams": ["NYK", "BKN"], "intensity": 3, "name": "Battle of New York"},
+  {"sport": "NBA", "teams": ["LAL", "LAC"], "intensity": 3, "name": "Battle of LA"},
+  {"sport": "NBA", "teams": ["GSW", "LAL"], "intensity": 3, "name": "Warriors-Lakers"},
+  {"sport": "NFL", "teams": ["CHI", "GB"], "intensity": 5, "name": "Bears-Packers"},
+  {"sport": "NFL", "teams": ["PIT", "BAL"], "intensity": 5, "name": "Steelers-Ravens"},
+  {"sport": "NFL", "teams": ["DAL", "PHI"], "intensity": 5, "name": "Cowboys-Eagles"},
+  {"sport": "NFL", "teams": ["DAL", "WAS"], "intensity": 4, "name": "Cowboys-Commanders"},
+  {"sport": "NFL", "teams": ["NYG", "PHI"], "intensity": 4, "name": "Giants-Eagles"},
+  {"sport": "NFL", "teams": ["KC", "LV"], "intensity": 4, "name": "Chiefs-Raiders"},
+  {"sport": "NFL", "teams": ["NE", "NYJ"], "intensity": 4, "name": "Patriots-Jets"},
+  {"sport": "NFL", "teams": ["SF", "SEA"], "intensity": 4, "name": "49ers-Seahawks"}
+]

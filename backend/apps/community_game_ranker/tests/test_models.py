@@ -16,6 +16,7 @@ from apps.community_game_ranker.models import (
     Sport,
     Stadium,
     Team,
+    TeamStanding,
     WeatherCondition,
 )
 
@@ -24,24 +25,32 @@ pytestmark = pytest.mark.django_db
 KICKOFF = datetime(2026, 11, 1, 18, 0, tzinfo=dt_timezone.utc)
 
 
+# Sports, NBA/NFL teams, stadiums, and rivalries are seeded by migration 0003, so fixtures
+# fetch those rows instead of creating them.
 @pytest.fixture
 def nba():
-    return Sport.objects.create(code=Sport.Code.NBA, name="Basketball")
+    return Sport.objects.get(code=Sport.Code.NBA)
 
 
 @pytest.fixture
 def nfl():
-    return Sport.objects.create(code=Sport.Code.NFL, name="Football", is_outdoor_default=True)
+    return Sport.objects.get(code=Sport.Code.NFL)
 
 
 @pytest.fixture
 def lakers(nba):
-    return Team.objects.create(sport=nba, name="Lakers", abbreviation="LAL", city="Los Angeles")
+    return Team.objects.get(sport=nba, abbreviation="LAL")
 
 
 @pytest.fixture
 def celtics(nba):
-    return Team.objects.create(sport=nba, name="Celtics", abbreviation="BOS", city="Boston")
+    return Team.objects.get(sport=nba, abbreviation="BOS")
+
+
+@pytest.fixture
+def no_rivalries():
+    """Clear the seeded rivalries so tests can create pairs from scratch."""
+    Rivalry.objects.all().delete()
 
 
 @pytest.fixture
@@ -137,6 +146,26 @@ def test_team_protected_while_games_exist(game, lakers):
         lakers.delete()
 
 
+# TeamStanding
+
+
+def test_standing_unique_per_team_season(lakers):
+    TeamStanding.objects.create(team=lakers, season=2026, wins=5, losses=2)
+    assert_integrity_error(lambda: TeamStanding.objects.create(team=lakers, season=2026))
+    # A new season is a new row.
+    TeamStanding.objects.create(team=lakers, season=2027)
+
+
+def test_standing_str_shows_ties_only_when_present(lakers, nfl):
+    assert str(TeamStanding.objects.create(team=lakers, season=2026, wins=5, losses=2)) == (
+        "LAL 2026: 5-2"
+    )
+    bears = Team.objects.get(sport=nfl, abbreviation="CHI")
+    assert str(TeamStanding.objects.create(team=bears, season=2026, wins=4, losses=3, ties=1)) == (
+        "CHI 2026: 4-3-1"
+    )
+
+
 # Injury / Weather
 
 
@@ -163,28 +192,29 @@ def test_weather_one_per_game_and_nonnegative(game):
 # Rivalry
 
 
-def test_rivalry_normalizes_team_order(lakers, celtics):
+def test_rivalry_normalizes_team_order(no_rivalries, lakers, celtics):
     rivalry = Rivalry.objects.create(team_a=celtics, team_b=lakers, intensity=5, name="Classic")
     rivalry.refresh_from_db()
     assert rivalry.team_a_id < rivalry.team_b_id
-    assert str(rivalry) == "Classic (LAL vs BOS)"
+    # BOS is seeded before LAL, so it has the lower pk and becomes team_a.
+    assert str(rivalry) == "Classic (BOS vs LAL)"
 
 
-def test_rivalry_pair_unique_in_either_order(lakers, celtics):
+def test_rivalry_pair_unique_in_either_order(no_rivalries, lakers, celtics):
     Rivalry.objects.create(team_a=lakers, team_b=celtics, intensity=4)
     assert_integrity_error(lambda: Rivalry.objects.create(team_a=celtics, team_b=lakers, intensity=3))
 
 
-def test_rivalry_between_is_order_independent(lakers, celtics, nba):
+def test_rivalry_between_is_order_independent(no_rivalries, lakers, celtics, nba):
     rivalry = Rivalry.objects.create(team_a=lakers, team_b=celtics, intensity=4)
     assert Rivalry.between(celtics, lakers) == rivalry
     assert Rivalry.between(lakers, celtics) == rivalry
-    other = Team.objects.create(sport=nba, name="Knicks", abbreviation="NYK")
+    other = Team.objects.get(sport=nba, abbreviation="NYK")
     assert Rivalry.between(lakers, other) is None
 
 
 @pytest.mark.parametrize("intensity", [0, 6])
-def test_rivalry_intensity_range(lakers, celtics, intensity):
+def test_rivalry_intensity_range(no_rivalries, lakers, celtics, intensity):
     assert_integrity_error(
         lambda: Rivalry.objects.create(team_a=lakers, team_b=celtics, intensity=intensity)
     )
@@ -215,39 +245,19 @@ def test_api_cache_key_unique():
 # CommunityVote
 
 
-def test_vote_unique_per_user_game_category(user, game):
-    CommunityVote.objects.create(
-        user=user, game=game, value=CommunityVote.Value.UP, category=CommunityVote.Category.ENJOYMENT
-    )
-    # A different category on the same game is allowed.
-    CommunityVote.objects.create(
-        user=user,
-        game=game,
-        value=CommunityVote.Value.DOWN,
-        category=CommunityVote.Category.OFFICIATING,
-    )
+def test_vote_unique_per_user_game(user, game):
+    CommunityVote.objects.create(user=user, game=game, value=CommunityVote.Value.UP)
     assert_integrity_error(
-        lambda: CommunityVote.objects.create(
-            user=user,
-            game=game,
-            value=CommunityVote.Value.DOWN,
-            category=CommunityVote.Category.ENJOYMENT,
-        )
+        lambda: CommunityVote.objects.create(user=user, game=game, value=CommunityVote.Value.DOWN)
     )
 
 
 def test_vote_value_must_be_plus_or_minus_one(user, game):
-    assert_integrity_error(
-        lambda: CommunityVote.objects.create(
-            user=user, game=game, value=2, category=CommunityVote.Category.ENJOYMENT
-        )
-    )
+    assert_integrity_error(lambda: CommunityVote.objects.create(user=user, game=game, value=2))
 
 
 def test_vote_str_and_cascade(user, game):
-    vote = CommunityVote.objects.create(
-        user=user, game=game, value=CommunityVote.Value.UP, category=CommunityVote.Category.ENJOYMENT
-    )
-    assert str(vote) == f"fan +1 enjoyment on game {game.pk}"
+    vote = CommunityVote.objects.create(user=user, game=game, value=CommunityVote.Value.UP)
+    assert str(vote) == f"fan +1 on game {game.pk}"
     user.delete()
     assert not CommunityVote.objects.exists()

@@ -99,6 +99,29 @@ class Player(models.Model):
         return f"{self.name} ({team})"
 
 
+class TeamStanding(models.Model):
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="standings")
+    # Year the season started, same convention as GameLog.season.
+    season = models.PositiveSmallIntegerField()
+    wins = models.PositiveSmallIntegerField(default=0)
+    losses = models.PositiveSmallIntegerField(default=0)
+    ties = models.PositiveSmallIntegerField(default=0)
+    # Null when the provider doesn't report it.
+    conference_rank = models.PositiveSmallIntegerField(null=True, blank=True)
+    games_back = models.FloatField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["team__sport", "conference_rank"]
+        constraints = [
+            models.UniqueConstraint(fields=["team", "season"], name="unique_standing_per_team_season"),
+        ]
+
+    def __str__(self):
+        record = f"{self.wins}-{self.losses}" + (f"-{self.ties}" if self.ties else "")
+        return f"{self.team.abbreviation} {self.season}: {record}"
+
+
 class GameLog(models.Model):
     class Status(models.TextChoices):
         SCHEDULED = "scheduled", "Scheduled"
@@ -268,28 +291,20 @@ class CommunityVote(models.Model):
         UP = 1, "Upvote"
         DOWN = -1, "Downvote"
 
-    class Category(models.TextChoices):
-        ENJOYMENT = "enjoyment", "Enjoyment"
-        COMPETITIVENESS = "competitiveness", "Competitiveness"
-        OFFICIATING = "officiating", "Officiating"
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_votes"
     )
     game = models.ForeignKey(GameLog, on_delete=models.CASCADE, related_name="votes")
     value = models.SmallIntegerField(choices=Value.choices)
-    category = models.CharField(max_length=20, choices=Category.choices)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            models.UniqueConstraint(
-                fields=["user", "game", "category"], name="unique_vote_per_user_game_category"
-            ),
+            models.UniqueConstraint(fields=["user", "game"], name="unique_vote_per_user_game"),
             models.CheckConstraint(condition=Q(value__in=[1, -1]), name="vote_value_plus_minus_one"),
         ]
 
     def __str__(self):
         sign = "+1" if self.value == self.Value.UP else "-1"
-        return f"{self.user} {sign} {self.category} on game {self.game_id}"
+        return f"{self.user} {sign} on game {self.game_id}"
