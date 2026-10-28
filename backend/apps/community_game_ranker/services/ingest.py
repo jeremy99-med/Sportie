@@ -27,6 +27,7 @@ from apps.community_game_ranker.models import (
     WeatherCondition,
 )
 from apps.community_game_ranker.services import stars as stars_service
+from apps.community_game_ranker.services.ranking import SCHEDULE_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,9 @@ def _resolve_team(sport, teams, ref):
 
 
 def _ttl_for_day(day, now):
-    return LIVE_TTL if day >= now.date() - timedelta(days=1) else FINAL_TTL
+    """`day` is a US Eastern calendar day, so compare it against today's Eastern date, not UTC's."""
+    today = now.astimezone(SCHEDULE_TZ).date()
+    return LIVE_TTL if day >= today - timedelta(days=1) else FINAL_TTL
 
 
 def _fetch_games(sport, day, now):
@@ -350,6 +353,7 @@ def _sync_weather(games, now, summary):
             defaults={
                 "temp_c": data["temp_c"],
                 "precip_mm": data.get("precip_mm") or 0,
+                "snow_cm": data.get("snow_cm") or 0,
                 "wind_kph": data.get("wind_kph") or 0,
                 "condition_text": (data.get("condition_text") or "")[:100],
                 "fetched_at": now,

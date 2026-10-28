@@ -84,6 +84,44 @@ def test_balldontlie_network_error_raises(monkeypatch):
         balldontlie.get_teams()
 
 
+def test_balldontlie_status_state_final_wins(http):
+    game = {"id": 1, "status": "4th Qtr", "status_state": "final", "period": 4}
+    http.add("/v1/games", {"data": [game], "meta": {}})
+    assert balldontlie.get_games("2026-10-29")[0]["status"] == "final"
+
+
+def _sequence(monkeypatch, responses):
+    """Patch requests.get to return `responses` in order."""
+    from .conftest import FakeResponse
+
+    queue = [FakeResponse(status, payload) for status, payload in responses]
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: queue.pop(0))
+    return queue
+
+
+def test_balldontlie_retries_once_after_429(http, monkeypatch):
+    waits = []
+    monkeypatch.setattr(balldontlie.time, "sleep", waits.append)
+    _sequence(monkeypatch, [(429, {}), (200, {"data": [], "meta": {}})])
+    assert balldontlie.get_teams() == []
+    assert waits == [balldontlie.RATE_LIMIT_WAIT]
+
+
+def test_balldontlie_persistent_429_raises_rate_limit_error(http, monkeypatch):
+    monkeypatch.setattr(balldontlie.time, "sleep", lambda seconds: None)
+    _sequence(monkeypatch, [(429, {}), (429, {})])
+    with pytest.raises(balldontlie.BalldontlieRateLimitError) as exc:
+        balldontlie.get_teams()
+    assert exc.value.args[0] == 429
+    assert isinstance(exc.value, BalldontlieError)
+
+
+def test_balldontlie_unexpected_shape_raises(http):
+    http.add("/v1/teams", ["not", "a", "dict"])
+    with pytest.raises(BalldontlieError):
+        balldontlie.get_teams()
+
+
 # ---------------------------------------------------------------- sportsdata
 
 
@@ -165,6 +203,7 @@ def test_weatherapi_picks_hour_closest_to_kickoff(http):
     assert result == {
         "temp_c": 6.5,
         "precip_mm": 1.2,
+        "snow_cm": 0.0,
         "wind_kph": 22.5,
         "condition_text": "Light rain",
     }
@@ -185,3 +224,46 @@ def test_weatherapi_invalid_request_raises(http):
     with pytest.raises(WeatherAPIError) as exc:
         weatherapi.get_forecast(0, 0, "2026-11-01T18:00:00+00:00")
     assert exc.value.args[0] == 400
+
+
+def test_sportsdata_estimated_injury_drops_any_text(http):
+    row = {
+        "PlayerID": 1,
+        "Team": "BOS",
+        "FirstName": "Derrick",
+        "LastName": "White",
+        "InjuryStatus": "Scrambled",
+        "InjuryBodyPart": "Xqzv",  # garbage, not the literal word
+        "InjuryNotes": "Lorem ipsum",
+    }
+    http.add("/v3/nba/projections/json/InjuredPlayers", [row])
+    assert sportsdata.get_injuries("NBA")[0]["description"] == ""
+
+
+@pytest.mark.parametrize("payload", [{"Message": "error with 200"}, [1, 2]])
+def test_sportsdata_unexpected_shape_raises(http, payload):
+    http.add("/v3/nba/scores/json/teams", payload)
+    with pytest.raises(SportsDataError):
+        sportsdata.get_teams("NBA")
+
+
+def test_weatherapi_returns_snow_cm(http):
+    forecast = load_fixture("weatherapi", "forecast")
+    for day in forecast["forecast"]["forecastday"]:
+        for hour in day["hour"]:
+            hour["snow_cm"] = 2.5
+    http.add("/v1/forecast.json", forecast)
+    assert weatherapi.get_forecast(39.0489, -94.4839, "2026-11-01T18:00:00+00:00")["snow_cm"] == 2.5
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        ["not", "a", "dict"],
+        {"forecast": {"forecastday": [{"hour": [{"temp_c": 5}]}]}},  # hour without time_epoch
+    ],
+)
+def test_weatherapi_malformed_response_raises(http, payload):
+    http.add("/v1/forecast.json", payload)
+    with pytest.raises(WeatherAPIError):
+        weatherapi.get_forecast(0, 0, "2026-11-01T18:00:00+00:00")

@@ -389,3 +389,10 @@ def test_sync_rosters_command(http):
     nfl_roster_routes(http)
     call_command("sync_rosters", sport="NFL", skip_stars=True)
     assert Player.objects.count() == 4
+
+
+def test_live_ttl_uses_eastern_day_not_utc():
+    # 02:00 UTC on Oct 29 is 22:00 ET on Oct 28, so Oct 27 is still "yesterday" and live.
+    now = datetime(2026, 10, 29, 2, 0, tzinfo=timezone.utc)
+    assert ingest._ttl_for_day(date(2026, 10, 27), now) == ingest.LIVE_TTL
+    assert ingest._ttl_for_day(date(2026, 10, 26), now) == ingest.FINAL_TTL

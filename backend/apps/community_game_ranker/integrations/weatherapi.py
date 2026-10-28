@@ -25,7 +25,7 @@ def _to_utc(when):
 def get_forecast(lat, lon, when) -> dict:
     """Forecast for the hour closest to `when` (aware datetime or ISO string).
 
-    Returns {temp_c, precip_mm, wind_kph, condition_text}.
+    Returns {temp_c, precip_mm, snow_cm, wind_kph, condition_text}.
     """
     key = os.environ.get("WEATHERAPI_KEY")
     if not key:
@@ -51,6 +51,8 @@ def get_forecast(lat, lon, when) -> dict:
         body = resp.json()
     except ValueError as exc:
         raise WeatherAPIError(resp.status_code, "response was not JSON") from exc
+    if not isinstance(body, dict):
+        raise WeatherAPIError(resp.status_code, "unexpected response shape")
     return _normalize(body, target)
 
 
@@ -58,7 +60,9 @@ def _normalize(body, target_epoch):
     hours = [
         h
         for day in (body.get("forecast") or {}).get("forecastday") or []
+        if isinstance(day, dict)
         for h in day.get("hour") or []
+        if isinstance(h, dict) and isinstance(h.get("time_epoch"), (int, float))
     ]
     if not hours:
         raise WeatherAPIError(200, "no hourly forecast in response")
@@ -69,6 +73,7 @@ def _normalize(body, target_epoch):
     return {
         "temp_c": best.get("temp_c"),
         "precip_mm": best.get("precip_mm") or 0.0,
+        "snow_cm": best.get("snow_cm") or 0.0,
         "wind_kph": best.get("wind_kph") or 0.0,
         "condition_text": (best.get("condition") or {}).get("text", ""),
     }

@@ -5,6 +5,7 @@ need the GOAT tier; on a lower tier those calls raise BalldontlieError (401/403)
 """
 
 import os
+import time
 from datetime import date as date_cls
 
 import requests
@@ -13,18 +14,30 @@ BASE_URL = "https://api.balldontlie.io/v1"
 TIMEOUT = 10
 PER_PAGE = 100
 MAX_PAGES = 20  # safety stop for cursor loops
+# On a 429 we wait once and retry. Free tier is 5 req/min, so one slot frees up every 12 s.
+RATE_LIMIT_WAIT = 12
+MAX_RATE_LIMIT_WAIT = 60
 
 
 class BalldontlieError(Exception):
     """Any failure talking to balldontlie (HTTP error, network error, missing key)."""
 
 
-def _get(path, params=None):
-    key = os.environ.get("BALLDONTLIE_API_KEY")
-    if not key:
-        raise BalldontlieError(0, "BALLDONTLIE_API_KEY is not set")
+class BalldontlieRateLimitError(BalldontlieError):
+    """HTTP 429 that persisted after one retry. Callers should stop calling balldontlie this run."""
+
+
+def _retry_after(resp):
     try:
-        resp = requests.get(
+        wait = float((getattr(resp, "headers", None) or {}).get("Retry-After", RATE_LIMIT_WAIT))
+    except (TypeError, ValueError):
+        wait = RATE_LIMIT_WAIT
+    return max(0.0, min(wait, MAX_RATE_LIMIT_WAIT))
+
+
+def _request(path, params, key):
+    try:
+        return requests.get(
             f"{BASE_URL}{path}",
             params=params,
             headers={"Authorization": key},
@@ -32,12 +45,27 @@ def _get(path, params=None):
         )
     except requests.RequestException as exc:
         raise BalldontlieError(0, f"request failed: {type(exc).__name__}") from exc
+
+
+def _get(path, params=None):
+    key = os.environ.get("BALLDONTLIE_API_KEY")
+    if not key:
+        raise BalldontlieError(0, "BALLDONTLIE_API_KEY is not set")
+    resp = _request(path, params, key)
+    if resp.status_code == 429:
+        time.sleep(_retry_after(resp))
+        resp = _request(path, params, key)
+        if resp.status_code == 429:
+            raise BalldontlieRateLimitError(429, "rate limit exceeded (free tier is 5 requests/min)")
     if resp.status_code != 200:
         raise BalldontlieError(resp.status_code, resp.text[:200])
     try:
-        return resp.json()
+        body = resp.json()
     except ValueError as exc:
         raise BalldontlieError(resp.status_code, "response was not JSON") from exc
+    if not isinstance(body, dict):
+        raise BalldontlieError(resp.status_code, "unexpected response shape")
+    return body
 
 
 def _get_all(path, params=None):
@@ -63,6 +91,10 @@ def _team_ref(team):
 def _game_status(raw):
     if raw.get("postponed"):
         return "postponed"
+    # Documented samples carry `status_state` ("final"); trust it when present. Its in-progress
+    # value is unconfirmed, so anything else falls through to the text/period checks.
+    if (raw.get("status_state") or "").strip().lower() == "final":
+        return "final"
     text = (raw.get("status") or "").strip().lower()
     if text.startswith("final"):
         return "final"

@@ -25,7 +25,7 @@ importance = 100 * sum(weight[sport][f] * factor_f(game) for f in FACTORS) / sum
 |---|---|---|
 | `playoff` | TeamStanding for both teams | Each team's stakes are `1 - abs(conference_rank - cutoff) / race_width`, averaged over both teams. That is scaled by `0.4 + 0.6 * season_progress`, so the factor matters more late in the season. Cutoffs are NFL 7, NBA 8 (the middle of the 6-10 play-in), NHL 8, MLB 6. A team with no standing counts as 0.5. The planned Claude assist (`services/ai_assist.py`, `--use-ai`) would replace this with a cached per-game value. |
 | `star_injury` | Injury rows for `is_star` players on either team | `1 - sum(severity) / stars_total`. Severity is out 1.0, doubtful 0.75, questionable 0.5. It's 1.0 when nobody is injured or neither team has stars. **Decided:** a missing star *lowers* the score. Trial-key injuries count as questionable (`status_estimated`). |
-| `weather` | WeatherCondition | **Always 0 for NBA and NHL**, for indoor stadiums, and when there's no forecast. Snow or sleet gives 1. Otherwise it's the larger of `precip_mm / 5` and `(wind_kph - 15) / 35`. |
+| `weather` | WeatherCondition | **Always 0 for NBA and NHL**, for indoor stadiums, and when there's no forecast. Snow or sleet gives 1 (any forecast `snow_cm` > 0, or the condition text mentions snow, sleet, blizzard or ice pellets). Otherwise it's the larger of `precip_mm / 5` and `(wind_kph - 15) / 35`. |
 | `momentum` | Both teams' last 5 final GameLog rows | Average win rate (a tie counts 0.5). A team with no finished games counts as 0.5. |
 | `rivalry` | `Rivalry.intensity / 5` | 0 when no rivalry row exists. |
 | `status` | GameLog.status | in_progress 1.0, scheduled 0.8, delayed 0.6, final 0.3, postponed 0. |
