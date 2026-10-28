@@ -61,7 +61,7 @@ class InjuryAdmin(admin.ModelAdmin):
 
 @admin.register(WeatherCondition)
 class WeatherConditionAdmin(admin.ModelAdmin):
-    list_display = ("game", "temp_c", "precip_mm", "wind_kph", "condition_text")
+    list_display = ("game", "temp_c", "precip_mm", "snow_cm", "wind_kph", "condition_text")
 
 
 @admin.register(Rivalry)

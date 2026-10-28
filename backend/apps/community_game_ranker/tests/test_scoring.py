@@ -93,6 +93,12 @@ def test_weather_never_counts_for_indoor_leagues(sport):
     assert weather_factor(sport, False, SNOW) == 0.0
 
 
+def test_weather_snow_cm_counts_as_snow_even_with_clear_text():
+    weather = {"precip_mm": 0, "snow_cm": 0.5, "wind_kph": 0, "condition_text": "Overcast"}
+    assert weather_factor("NFL", False, weather) == 1.0
+    assert weather_factor("NFL", False, {**weather, "snow_cm": 0}) == 0.0
+
+
 def test_weather_zero_indoors_or_without_data():
     assert weather_factor("NFL", True, SNOW) == 0.0
     assert weather_factor("NFL", False, None) == 0.0

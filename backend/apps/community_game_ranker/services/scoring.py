@@ -80,12 +80,13 @@ def star_injury_factor(stars_total: int, injured_star_statuses: list[str]) -> fl
 def weather_factor(sport: str, is_indoor: bool, weather: dict | None) -> float:
     """Heavy rain, strong wind, or snow at an outdoor game adds drama. 0 indoors or without data.
 
-    `weather` has `precip_mm`, `wind_kph`, `condition_text`.
+    `weather` has `precip_mm`, `snow_cm`, `wind_kph`, `condition_text`. Snow counts if the forecast
+    has any snowfall or the condition text mentions it.
     """
     if sport in INDOOR_SPORTS or is_indoor or not weather:
         return 0.0
     condition = (weather.get("condition_text") or "").lower()
-    if any(word in condition for word in SNOW_WORDS):
+    if (weather.get("snow_cm") or 0) > 0 or any(word in condition for word in SNOW_WORDS):
         return 1.0
     rain = (weather.get("precip_mm") or 0) / HEAVY_PRECIP_MM
     wind = ((weather.get("wind_kph") or 0) - CALM_WIND_KPH) / (STORM_WIND_KPH - CALM_WIND_KPH)

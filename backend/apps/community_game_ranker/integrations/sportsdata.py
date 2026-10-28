@@ -17,7 +17,8 @@ TIMEOUT = 10
 LEAGUES = ("NFL", "NBA")
 EASTERN = ZoneInfo("America/New_York")
 
-# UNCONFIRMED: the docs pages do not list status values.
+# Game.Status values from the NBA data dictionary (confirmed 2026-10-28). The NFL dictionary links
+# to a separate guide instead of listing them; we assume the same set.
 _STATUS_MAP = {
     "scheduled": "scheduled",
     "inprogress": "in_progress",
@@ -80,9 +81,13 @@ def _get(league, feed, endpoint):
     if resp.status_code != 200:
         raise SportsDataError(resp.status_code, resp.text[:200])
     try:
-        return resp.json()
+        body = resp.json()
     except ValueError as exc:
         raise SportsDataError(resp.status_code, "response was not JSON") from exc
+    # Every endpoint we call returns a JSON array of objects.
+    if not isinstance(body, list) or not all(isinstance(row, dict) for row in body):
+        raise SportsDataError(resp.status_code, "unexpected response shape (expected a list of objects)")
+    return body
 
 
 def format_date(day):
@@ -180,7 +185,9 @@ def get_injuries(league, season_code=None, week=None):
             parts = [row.get("BodyPart"), row.get("PracticeDescription")]
         else:
             parts = [row.get("InjuryBodyPart"), row.get("InjuryNotes")]
-        parts = [p for p in parts if p and p.strip().lower() != SCRAMBLED]
+        # Trial keys scramble the body part and notes along with the status, possibly as garbage
+        # text rather than the literal "Scrambled", so drop them whenever the status is estimated.
+        parts = [] if estimated else [p for p in parts if p and p.strip().lower() != SCRAMBLED]
         out.append(
             {
                 "player_id": row["PlayerID"],
@@ -272,7 +279,7 @@ def get_player_season_stats(league, season):
 
 
 def get_teams(league):
-    """Teams with SportsData ids. Endpoint path UNCONFIRMED (standard SportsData route)."""
+    """Active teams with SportsData ids (NFL `Teams`, NBA `teams`; `AllTeams` adds inactive ones)."""
     _check_league(league)
     raw = _get(league, "scores", "Teams" if league == "NFL" else "teams")
     return [

@@ -82,6 +82,7 @@ def game_factors(game):
             game.stadium.is_indoor if game.stadium else True,
             {
                 "precip_mm": weather.precip_mm,
+                "snow_cm": weather.snow_cm,
                 "wind_kph": weather.wind_kph,
                 "condition_text": weather.condition_text,
             }

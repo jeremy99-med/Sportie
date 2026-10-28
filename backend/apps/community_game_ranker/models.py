@@ -204,6 +204,7 @@ class WeatherCondition(models.Model):
     game = models.OneToOneField(GameLog, on_delete=models.CASCADE, related_name="weather")
     temp_c = models.FloatField()
     precip_mm = models.FloatField(default=0)
+    snow_cm = models.FloatField(default=0)
     wind_kph = models.FloatField(default=0)
     condition_text = models.CharField(max_length=100, blank=True)
     fetched_at = models.DateTimeField(default=timezone.now)
@@ -211,6 +212,7 @@ class WeatherCondition(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(condition=Q(precip_mm__gte=0), name="weather_precip_nonnegative"),
+            models.CheckConstraint(condition=Q(snow_cm__gte=0), name="weather_snow_nonnegative"),
             models.CheckConstraint(condition=Q(wind_kph__gte=0), name="weather_wind_nonnegative"),
         ]
 
