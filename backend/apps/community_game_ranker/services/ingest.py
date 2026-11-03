@@ -27,7 +27,7 @@ from apps.community_game_ranker.models import (
     WeatherCondition,
 )
 from apps.community_game_ranker.services import stars as stars_service
-from apps.community_game_ranker.services.ranking import SCHEDULE_TZ
+from apps.community_game_ranker.services.ranking import SCHEDULE_TZ, games_on, score_day
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,8 @@ WEATHER_TTL = timedelta(hours=3)
 WEATHER_WINDOW = timedelta(days=3)  # WeatherAPI free plan forecasts 3 days
 GAME_MATCH_WINDOW = timedelta(hours=12)  # same teams within this window = same game
 BACKFILL_DAYS = 14
+
+OPEN_STATUSES = (GameLog.Status.SCHEDULED, GameLog.Status.IN_PROGRESS, GameLog.Status.DELAYED)
 
 # Provider abbreviation -> our abbreviation (matches seed/teams_*.json). Providers disagree,
 # e.g. PHO/PHX, GS/GSW, NO/NOP, WSH/WAS, JAC/JAX, LA/LAR. Unlisted abbreviations pass through.
@@ -282,7 +284,7 @@ def _fetch_injuries(sport, games):
 
 
 def _sync_injuries(sport, games, now, summary):
-    open_games = [g for g in games if g.status in (GameLog.Status.SCHEDULED, GameLog.Status.IN_PROGRESS, GameLog.Status.DELAYED)]
+    open_games = [g for g in games if g.status in OPEN_STATUSES]
     if not open_games:
         return
     injuries = _fetch_injuries(sport, open_games)
@@ -398,6 +400,30 @@ def ingest_day(day, sports=SUPPORTED_SPORTS, now=None):
                 step()
             except PROVIDER_ERRORS as exc:
                 _record_error(summary, name, exc)
+    return results
+
+
+def refresh_live(now=None):
+    """One polling pass: ingest and re-score today, plus yesterday's sports with open games.
+
+    Providers list a game under the US date it started on, so a game still running at 12:30 AM
+    Eastern belongs to yesterday. Yesterday runs first so its results reach today's momentum
+    factor in the same pass. Returns {day: {sport: summary}}.
+    """
+    now = now or timezone.now()
+    today = now.astimezone(SCHEDULE_TZ).date()
+    yesterday = today - timedelta(days=1)
+    unfinished = set(
+        games_on(yesterday).filter(status__in=OPEN_STATUSES).values_list("sport__code", flat=True)
+    )
+    results = {}
+    late_sports = tuple(s for s in SUPPORTED_SPORTS if s in unfinished)
+    if late_sports:
+        results[yesterday] = ingest_day(yesterday, sports=late_sports, now=now)
+    results[today] = ingest_day(today, now=now)
+    for day, by_sport in results.items():
+        for sport in by_sport:
+            score_day(day, sport)
     return results
 
 
