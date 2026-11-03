@@ -434,7 +434,34 @@ def requested_nba_dates(http):
     return [c["params"]["dates[]"] for c in http.calls if "/v1/games" in c["url"]]
 
 
-def test_refresh_finishes_and_rescores_a_game_running_past_midnight(http):
+def mark_window_fetched(today, fetched_at):
+    """Record a games fetch for each sport on every day in the window around `today`."""
+    for sport in ingest.SUPPORTED_SPORTS:
+        for offset in range(-ingest.WINDOW_DAYS, ingest.WINDOW_DAYS + 1):
+            provider, endpoint, params = ingest._games_cache_key(sport, today + timedelta(days=offset))
+            ExternalAPIMetadata.objects.update_or_create(
+                provider=provider,
+                endpoint=endpoint,
+                params_hash=ExternalAPIMetadata.hash_params(params),
+                defaults={"response": [], "status_code": 200, "fetched_at": fetched_at},
+            )
+
+
+@pytest.fixture
+def clock(monkeypatch):
+    """Pin the current time so cache ages don't depend on the real date."""
+    current = {"now": AFTER_MIDNIGHT}
+    monkeypatch.setattr(ingest.timezone, "now", lambda: current["now"])
+    return current
+
+
+@pytest.fixture
+def window_fetched(clock):
+    # Fetched, but long enough ago that a pass asking for these days gets fresh data.
+    mark_window_fetched(date(2026, 11, 3), AFTER_MIDNIGHT - timedelta(hours=1))
+
+
+def test_refresh_finishes_and_rescores_a_game_running_past_midnight(http, window_fetched):
     game = late_game()
     provider_routes(http, [finished_late_game()])
     http.add("/nba/scores/json/Standings/", [])
@@ -449,7 +476,7 @@ def test_refresh_finishes_and_rescores_a_game_running_past_midnight(http):
     assert game.importance_score is not None
 
 
-def test_refresh_skips_yesterday_once_its_games_are_final(http):
+def test_refresh_skips_yesterday_once_its_games_are_final(http, window_fetched):
     late_game(status=GameLog.Status.FINAL)
     provider_routes(http, [])
 
@@ -459,7 +486,7 @@ def test_refresh_skips_yesterday_once_its_games_are_final(http):
     assert list(results) == [date(2026, 11, 3)]
 
 
-def test_refresh_only_rechecks_yesterday_for_the_sport_with_open_games(http):
+def test_refresh_only_rechecks_yesterday_for_the_sport_with_open_games(http, window_fetched):
     late_game()
     provider_routes(http, [])
 
@@ -469,15 +496,79 @@ def test_refresh_only_rechecks_yesterday_for_the_sport_with_open_games(http):
     assert len(http.urls("ScoresByDate")) == 1
 
 
-def test_refresh_ignores_open_games_older_than_yesterday(http):
-    GameLog.objects.create(
+def open_nba_game(when):
+    return GameLog.objects.create(
         sport=Sport.objects.get(code="NBA"),
         home_team=team("NBA", "LAL"),
         away_team=team("NBA", "GSW"),
-        scheduled_at=datetime(2026, 11, 1, 23, 0, tzinfo=timezone.utc),
+        scheduled_at=when,
         status=GameLog.Status.SCHEDULED,
         season=2026,
     )
+
+
+def test_refresh_loads_the_day_that_joins_the_window_at_midnight(http, clock):
+    mark_window_fetched(date(2026, 11, 3), AFTER_MIDNIGHT - timedelta(hours=1))
+    clock["now"] = datetime(2026, 11, 4, 5, 1, tzinfo=timezone.utc)  # 00:01 ET on Nov 4
+    provider_routes(http, [])
+
+    results = ingest.refresh_live(now=clock["now"])
+
+    assert requested_nba_dates(http) == ["2026-11-04", "2026-11-09"]
+    assert list(results) == [date(2026, 11, 4), date(2026, 11, 9)]
+    assert set(results[date(2026, 11, 9)]) == {"NBA", "NFL"}
+
+
+def test_refresh_retries_a_window_day_whose_fetch_failed(http, clock):
+    mark_window_fetched(date(2026, 11, 3), AFTER_MIDNIGHT - timedelta(hours=1))
+    clock["now"] = datetime(2026, 11, 4, 5, 1, tzinfo=timezone.utc)
+    http.add("/v1/games", {"error": "down"}, status=500)
+    http.add("/nfl/scores/json/ScoresByDate/", [])
+
+    first = ingest.refresh_live(now=clock["now"])
+    assert first[date(2026, 11, 9)]["NBA"]["errors"]
+
+    http.routes.clear()
+    http.calls.clear()
+    provider_routes(http, [])
+    clock["now"] += timedelta(minutes=5)
+    ingest.refresh_live(now=clock["now"])
+    assert "2026-11-09" in requested_nba_dates(http)
+
+
+def test_refresh_fills_an_empty_window_a_few_days_at_a_time_nearest_first(http, clock):
+    provider_routes(http, [])
+
+    ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert len(requested_nba_dates(http)) == 1 + ingest.SYNC_DAYS_PER_PASS  # today plus the limit
+    # Nearest first: Nov 2 and Nov 4 are one day away, then Nov 1 is the earlier of the two days away.
+    assert requested_nba_dates(http) == ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"]
+
+
+def test_refresh_resyncs_a_future_day_with_open_games_once_its_fetch_is_old(http, clock):
+    mark_window_fetched(date(2026, 11, 3), AFTER_MIDNIGHT - ingest.WINDOW_RESYNC_AFTER)
+    open_nba_game(datetime(2026, 11, 6, 0, 0, tzinfo=timezone.utc))  # Nov 5 ET
+    provider_routes(http, [])
+
+    ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-03", "2026-11-05"]
+
+
+def test_refresh_leaves_recently_fetched_open_days_alone(http, window_fetched):
+    open_nba_game(datetime(2026, 11, 6, 0, 0, tzinfo=timezone.utc))  # Nov 5 ET
+    open_nba_game(datetime(2026, 11, 1, 23, 0, tzinfo=timezone.utc))  # Nov 1 ET
+    provider_routes(http, [])
+
+    ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-03"]
+
+
+def test_refresh_ignores_open_games_outside_the_window(http, clock):
+    mark_window_fetched(date(2026, 11, 3), AFTER_MIDNIGHT - ingest.WINDOW_RESYNC_AFTER)
+    open_nba_game(datetime(2026, 10, 20, 23, 0, tzinfo=timezone.utc))
     provider_routes(http, [])
 
     ingest.refresh_live(now=AFTER_MIDNIGHT)

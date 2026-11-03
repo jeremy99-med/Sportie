@@ -12,7 +12,7 @@ DEFAULT_INTERVAL_SECONDS = 300
 
 
 class Command(BaseCommand):
-    help = "Keep today's games current, plus last night's games that have not finished."
+    help = "Keep today's games current, finish last night's, and load the rest of the site's window."
 
     def add_arguments(self, parser):
         parser.add_argument(

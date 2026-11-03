@@ -135,6 +135,11 @@ kbd {
   --bs-btn-hover-bg: var(--sp-cyan);
   --bs-btn-hover-border-color: var(--sp-cyan);
   --bs-btn-hover-color: var(--sp-bg);
+  --bs-btn-active-bg: var(--sp-cyan);
+  --bs-btn-active-border-color: var(--sp-cyan);
+  --bs-btn-active-color: var(--sp-bg);
+  --bs-btn-disabled-color: var(--sp-text-muted);
+  --bs-btn-disabled-border-color: var(--sp-border);
 }
 
 .badge.text-bg-light {

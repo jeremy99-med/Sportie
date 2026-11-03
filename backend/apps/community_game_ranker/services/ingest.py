@@ -47,6 +47,13 @@ BACKFILL_DAYS = 14
 
 OPEN_STATUSES = (GameLog.Status.SCHEDULED, GameLog.Status.IN_PROGRESS, GameLog.Status.DELAYED)
 
+# The site shows today plus this many days either side. Keep in sync with the frontend's dates.js.
+WINDOW_DAYS = 5
+# Extra days a polling pass may fetch per sport. With today and yesterday, NBA stays within
+# balldontlie's free limit of 5 requests/min. Whatever doesn't fit waits for the next pass.
+SYNC_DAYS_PER_PASS = 3
+WINDOW_RESYNC_AFTER = timedelta(hours=12)
+
 # Provider abbreviation -> our abbreviation (matches seed/teams_*.json). Providers disagree,
 # e.g. PHO/PHX, GS/GSW, NO/NOP, WSH/WAS, JAC/JAX, LA/LAR. Unlisted abbreviations pass through.
 TEAM_ALIASES = {
@@ -155,19 +162,17 @@ def _ttl_for_day(day, now):
     return LIVE_TTL if day >= today - timedelta(days=1) else FINAL_TTL
 
 
-def _fetch_games(sport, day, now):
-    ttl = _ttl_for_day(day, now)
+def _games_cache_key(sport, day):
+    """(provider, endpoint, params) of the games response for one sport and day."""
     if sport == "NBA":
-        return cached_call(
-            "balldontlie", "games", {"date": day.isoformat()}, lambda: balldontlie.get_games(day), ttl
-        )
-    return cached_call(
-        "sportsdata",
-        "ScoresByDate",
-        {"league": sport, "date": day.isoformat()},
-        lambda: sportsdata.get_scores(sport, day),
-        ttl,
-    )
+        return "balldontlie", "games", {"date": day.isoformat()}
+    return "sportsdata", "ScoresByDate", {"league": sport, "date": day.isoformat()}
+
+
+def _fetch_games(sport, day, now):
+    fetch = (lambda: balldontlie.get_games(day)) if sport == "NBA" else (lambda: sportsdata.get_scores(sport, day))
+    provider, endpoint, params = _games_cache_key(sport, day)
+    return cached_call(provider, endpoint, params, fetch, _ttl_for_day(day, now))
 
 
 def _upsert_games(sport, games, summary):
@@ -403,12 +408,44 @@ def ingest_day(day, sports=SUPPORTED_SPORTS, now=None):
     return results
 
 
-def refresh_live(now=None):
-    """One polling pass: ingest and re-score today, plus yesterday's sports with open games.
+def _window_days_to_sync(sport, today, skip, now):
+    """Days in the site's window that this pass should fetch for `sport`, most urgent first.
 
-    Providers list a game under the US date it started on, so a game still running at 12:30 AM
-    Eastern belongs to yesterday. Yesterday runs first so its results reach today's momentum
-    factor in the same pass. Returns {day: {sport: summary}}.
+    A day qualifies if it was never fetched, or still has open games and its last fetch is old.
+    A failed fetch caches nothing, so it qualifies again on the next pass.
+    """
+    candidates = []
+    for offset in range(-WINDOW_DAYS, WINDOW_DAYS + 1):
+        day = today + timedelta(days=offset)
+        if day in skip:
+            continue
+        provider, endpoint, params = _games_cache_key(sport, day)
+        row = ExternalAPIMetadata.objects.filter(
+            provider=provider,
+            endpoint=endpoint,
+            params_hash=ExternalAPIMetadata.hash_params(params),
+            status_code=200,
+        ).first()
+        if row is None:
+            candidates.append((0, abs(offset), day))
+        elif (
+            now - row.fetched_at >= WINDOW_RESYNC_AFTER
+            and games_on(day, sport).filter(status__in=OPEN_STATUSES).exists()
+        ):
+            candidates.append((1, abs(offset), day))
+    return [day for _, _, day in sorted(candidates)[:SYNC_DAYS_PER_PASS]]
+
+
+def refresh_live(now=None):
+    """One polling pass: ingest and re-score every day that needs it. Returns {day: {sport: summary}}.
+
+    - Today, always.
+    - Yesterday, for sports with open games. Providers list a game under the US date it started
+      on, so a game still running at 12:30 AM Eastern belongs to yesterday.
+    - Other days in the site's window, per `_window_days_to_sync`. This is how the day that joins
+      the window at midnight gets loaded, and how gaps fill in after the app was stopped.
+
+    Days run oldest first so finished games reach later days' momentum factor in the same pass.
     """
     now = now or timezone.now()
     today = now.astimezone(SCHEDULE_TZ).date()
@@ -416,11 +453,16 @@ def refresh_live(now=None):
     unfinished = set(
         games_on(yesterday).filter(status__in=OPEN_STATUSES).values_list("sport__code", flat=True)
     )
-    results = {}
-    late_sports = tuple(s for s in SUPPORTED_SPORTS if s in unfinished)
-    if late_sports:
-        results[yesterday] = ingest_day(yesterday, sports=late_sports, now=now)
-    results[today] = ingest_day(today, now=now)
+    plan = {today: list(SUPPORTED_SPORTS)}
+    for sport in SUPPORTED_SPORTS:
+        skip = {today}
+        if sport in unfinished:
+            plan.setdefault(yesterday, []).append(sport)
+            skip.add(yesterday)
+        for day in _window_days_to_sync(sport, today, skip, now):
+            plan.setdefault(day, []).append(sport)
+
+    results = {day: ingest_day(day, sports=tuple(plan[day]), now=now) for day in sorted(plan)}
     for day, by_sport in results.items():
         for sport in by_sport:
             score_day(day, sport)
