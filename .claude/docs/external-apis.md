@@ -97,10 +97,18 @@ Do not loop `get_players(team_id)` over all 30 teams on a free key (6 min of quo
 SportsData instead.
 
 Polling: `python manage.py refresh_ranker` calls `ingest.refresh_live` in a loop (default 5 min; the
-`ranker-refresh` compose service runs it). Each pass ingests and re-scores today, plus yesterday for
-any sport that still has an unfinished game there, so games running past midnight Eastern get their
-final score. That is at most 2 balldontlie calls per pass (about 0.4/min, under the 5/min limit).
-Yesterday's rows stop being rechecked at the next Eastern midnight, even if never marked final.
+`ranker-refresh` compose service runs it). The site shows an 11-day window: today and `WINDOW_DAYS`
+(5) either side. Each pass ingests and re-scores:
+- today, always;
+- yesterday, for any sport with an unfinished game there, so games running past midnight Eastern get
+  their final score;
+- other window days, at most `SYNC_DAYS_PER_PASS` (3) per sport: days never fetched first, then days
+  with open games whose last fetch is over 12 hours old.
+
+There is no separate midnight job. The day that joins the window at midnight has never been fetched,
+so the first pass after midnight loads it. The same rule fills gaps after downtime (an empty window
+takes about 4 passes) and retries failed fetches. NBA makes at most 5 balldontlie calls per pass, at
+the 5/min free limit only while catching up. Games outside the window are never rechecked.
 
 ## Client pattern
 

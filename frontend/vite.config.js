@@ -11,9 +11,13 @@ export default defineConfig({
       interval: 300,
     },
     // Send API calls to Django through this origin so session cookies and CSRF work
-    // without CORS. Docker sets the target to the backend service.
+    // without CORS. Docker sets the target to the backend service. Keep the browser's Host header
+    // (changeOrigin: false), or Django's CSRF check rejects the request's Origin as cross-site.
     proxy: {
-      "/api": process.env.VITE_API_TARGET || "http://localhost:8000",
+      "/api": {
+        target: process.env.VITE_API_TARGET || "http://localhost:8000",
+        changeOrigin: false,
+      },
     },
   },
 });
