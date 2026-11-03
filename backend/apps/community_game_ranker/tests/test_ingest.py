@@ -4,11 +4,13 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from apps.community_game_ranker.management.commands import refresh_ranker
 from apps.community_game_ranker.models import (
     ExternalAPIMetadata,
     GameLog,
     Injury,
     Player,
+    Sport,
     Team,
     TeamStanding,
     WeatherCondition,
@@ -396,3 +398,124 @@ def test_live_ttl_uses_eastern_day_not_utc():
     now = datetime(2026, 10, 29, 2, 0, tzinfo=timezone.utc)
     assert ingest._ttl_for_day(date(2026, 10, 27), now) == ingest.LIVE_TTL
     assert ingest._ttl_for_day(date(2026, 10, 26), now) == ingest.FINAL_TTL
+
+
+# ---------------------------------------------------------------- refresh_live
+
+# 00:30 ET on Nov 3 (EST is UTC-5), while a game from the night of Nov 2 is still running.
+AFTER_MIDNIGHT = datetime(2026, 11, 3, 5, 30, tzinfo=timezone.utc)
+LATE_TIPOFF = "2026-11-03T03:30:00.000Z"  # 22:30 ET on Nov 2
+
+
+def late_game(status=GameLog.Status.IN_PROGRESS):
+    return GameLog.objects.create(
+        sport=Sport.objects.get(code="NBA"),
+        home_team=team("NBA", "LAL"),
+        away_team=team("NBA", "GSW"),
+        scheduled_at=datetime(2026, 11, 3, 3, 30, tzinfo=timezone.utc),
+        status=status,
+        home_score=90,
+        away_score=88,
+        season=2026,
+    )
+
+
+def provider_routes(http, nba_games):
+    http.add("/v1/games", {"data": nba_games, "meta": {}})
+    http.add("/nfl/scores/json/ScoresByDate/", [])
+
+
+def finished_late_game():
+    game = load_fixture("balldontlie", "games")["data"][0]  # LAL vs GS, status Final
+    return {**game, "datetime": LATE_TIPOFF, "date": "2026-11-02"}
+
+
+def requested_nba_dates(http):
+    return [c["params"]["dates[]"] for c in http.calls if "/v1/games" in c["url"]]
+
+
+def test_refresh_finishes_and_rescores_a_game_running_past_midnight(http):
+    game = late_game()
+    provider_routes(http, [finished_late_game()])
+    http.add("/nba/scores/json/Standings/", [])
+
+    results = ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-02", "2026-11-03"]
+    assert list(results) == [date(2026, 11, 2), date(2026, 11, 3)]
+    game.refresh_from_db()
+    assert game.status == GameLog.Status.FINAL
+    assert (game.home_score, game.away_score) == (118, 110)
+    assert game.importance_score is not None
+
+
+def test_refresh_skips_yesterday_once_its_games_are_final(http):
+    late_game(status=GameLog.Status.FINAL)
+    provider_routes(http, [])
+
+    results = ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-03"]
+    assert list(results) == [date(2026, 11, 3)]
+
+
+def test_refresh_only_rechecks_yesterday_for_the_sport_with_open_games(http):
+    late_game()
+    provider_routes(http, [])
+
+    ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-02", "2026-11-03"]
+    assert len(http.urls("ScoresByDate")) == 1
+
+
+def test_refresh_ignores_open_games_older_than_yesterday(http):
+    GameLog.objects.create(
+        sport=Sport.objects.get(code="NBA"),
+        home_team=team("NBA", "LAL"),
+        away_team=team("NBA", "GSW"),
+        scheduled_at=datetime(2026, 11, 1, 23, 0, tzinfo=timezone.utc),
+        status=GameLog.Status.SCHEDULED,
+        season=2026,
+    )
+    provider_routes(http, [])
+
+    ingest.refresh_live(now=AFTER_MIDNIGHT)
+
+    assert requested_nba_dates(http) == ["2026-11-03"]
+
+
+def test_refresh_ranker_once_prints_each_sport(http, capsys):
+    provider_routes(http, [])
+    call_command("refresh_ranker", once=True)
+    out = capsys.readouterr().out
+    assert "NBA: 0 new" in out and "NFL: 0 new" in out
+
+
+def test_refresh_ranker_rejects_bad_interval():
+    with pytest.raises(CommandError):
+        call_command("refresh_ranker", interval=0)
+
+
+def test_refresh_ranker_loop_survives_a_failed_pass(monkeypatch):
+    passes, sleeps = [], []
+
+    def flaky_refresh():
+        passes.append(1)
+        if len(passes) == 1:
+            raise RuntimeError("boom")
+        return {}
+
+    def fake_sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) == 2:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(ingest, "refresh_live", flaky_refresh)
+    monkeypatch.setattr(refresh_ranker, "close_old_connections", lambda: None)
+    monkeypatch.setattr(refresh_ranker.time, "sleep", fake_sleep)
+
+    call_command("refresh_ranker", interval=7)
+
+    assert len(passes) == 2
+    assert sleeps == [7, 7]

@@ -96,6 +96,12 @@ balldontlie at 5/min: `ingest_day` makes 1 NBA games call per day, `backfill` ma
 Do not loop `get_players(team_id)` over all 30 teams on a free key (6 min of quota); rosters use
 SportsData instead.
 
+Polling: `python manage.py refresh_ranker` calls `ingest.refresh_live` in a loop (default 5 min; the
+`ranker-refresh` compose service runs it). Each pass ingests and re-scores today, plus yesterday for
+any sport that still has an unfinished game there, so games running past midnight Eastern get their
+final score. That is at most 2 balldontlie calls per pass (about 0.4/min, under the 5/min limit).
+Yesterday's rows stop being rechecked at the next Eastern midnight, even if never marked final.
+
 ## Client pattern
 
 ```python
