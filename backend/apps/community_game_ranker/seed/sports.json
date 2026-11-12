@@ -1,0 +1,6 @@
+[
+  {"code": "NFL", "name": "Football", "is_outdoor_default": true},
+  {"code": "NBA", "name": "Basketball", "is_outdoor_default": false},
+  {"code": "NHL", "name": "Hockey", "is_outdoor_default": false},
+  {"code": "MLB", "name": "Baseball", "is_outdoor_default": true}
+]

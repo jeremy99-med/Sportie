@@ -1,0 +1,22 @@
+[
+  {
+    "PlayerID": 20000571,
+    "FirstName": "Nikola",
+    "LastName": "Jokic",
+    "Team": "DEN",
+    "Position": "C",
+    "InjuryStatus": "Out",
+    "InjuryBodyPart": "Hamstring",
+    "InjuryNotes": "Day to day"
+  },
+  {
+    "PlayerID": 20000572,
+    "FirstName": "Jamal",
+    "LastName": "Murray",
+    "Team": "DEN",
+    "Position": "PG",
+    "InjuryStatus": "Probable",
+    "InjuryBodyPart": "Knee",
+    "InjuryNotes": ""
+  }
+]

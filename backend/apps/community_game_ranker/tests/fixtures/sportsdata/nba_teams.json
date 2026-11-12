@@ -1,0 +1,14 @@
+[
+  {
+    "TeamID": 4,
+    "Key": "DEN",
+    "City": "Denver",
+    "Name": "Nuggets"
+  },
+  {
+    "TeamID": 5,
+    "Key": "PHO",
+    "City": "Phoenix",
+    "Name": "Suns"
+  }
+]

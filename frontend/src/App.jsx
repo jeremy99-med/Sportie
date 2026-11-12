@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import GameRanker from "./features/community-game-ranker/components/GameRanker.jsx";
+
 const features = [
   {
     name: "Video Analyzer",
@@ -13,7 +16,28 @@ const features = [
   },
 ];
 
+const RANKER_HASH = "#community-game-ranker";
+
 export default function App() {
+  const [hash, setHash] = useState(window.location.hash);
+
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  if (hash === RANKER_HASH) {
+    return (
+      <main className="container py-5">
+        <a className="eyebrow d-inline-block mb-4 text-decoration-none" href="#">
+          SPORTIE
+        </a>
+        <GameRanker />
+      </main>
+    );
+  }
+
   return (
     <main className="container py-5">
       <header className="mb-5">
@@ -32,7 +56,13 @@ export default function App() {
                 <p className="card-text text-secondary">
                   {feature.description}
                 </p>
-                <span className="badge text-bg-light">{feature.path}</span>
+                {feature.path === "community-game-ranker" ? (
+                  <a className="btn btn-primary" href={RANKER_HASH}>
+                    View today's games
+                  </a>
+                ) : (
+                  <span className="badge text-bg-light">{feature.path}</span>
+                )}
               </div>
             </div>
           </article>

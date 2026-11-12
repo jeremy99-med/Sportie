@@ -4,15 +4,34 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
 
 ## Layout
 
-- `models.py`: Sport, Team, Player, Stadium, GameLog, Injury, WeatherCondition, Rivalry,
+- `models.py`: Sport, Team, Player, Stadium, TeamStanding, GameLog, Injury, WeatherCondition, Rivalry,
   ExternalAPIMetadata, CommunityVote. Full field list: `.claude/docs/data-model.md`.
+- `seed/`: reference data. Sports, NBA/NFL teams, stadiums (coordinates for weather lookups),
+  and rivalries load in migration `0003_seed_reference_data`, so edit the JSON and add a new
+  data migration for changes. `stars.json` holds per-sport `always` / `never` star overrides (at most 5
+  stars per team in total) and loads with `python manage.py seed_stars`. Computed stars come from
+  `python manage.py sync_rosters` (rosters, trades, and `pick_stars` from season stats).
 - `integrations/`: one module per provider (`balldontlie.py`, `sportsdata.py`, `weatherapi.py`).
   These are thin HTTP clients that return normalized dicts and never touch the ORM.
   See `.claude/docs/external-apis.md`.
-- `services/`: `scoring.py` (pure functions, one per factor plus a combiner),
-  `ingest.py` (calls the clients and upserts models), `ai_assist.py` (Claude call for playoff
+- `services/`: `stars.py` (`pick_stars`, star sync with overrides), `scoring.py` (pure functions, one per factor plus a combiner), `ranking.py` (DB inputs, `score_day`, `ranked_games`),
+  `ingest.py` (cached_call, ingest_day, refresh_live, backfill_finished, sync_rosters; the only module using both clients and the ORM; run with `python manage.py ingest_ranker --date YYYY-MM-DD [--sport NBA] [--backfill]`, or keep current with `python manage.py refresh_ranker [--once] [--interval 300]`, which also rechecks last night's unfinished games and loads the rest of the site's 11-day window), `ai_assist.py` (Claude call for playoff
   implications). See `.claude/docs/importance-scoring.md`.
 - `tests/`: mirrors the modules (`test_scoring.py`, `test_integrations.py`, `test_votes.py`, ...).
+
+## API (`/api/ranker/`, auth at `/api/auth/`)
+
+- `GET games/?date=YYYY-MM-DD&sport=NBA`: the day's games (US Eastern, default today), ranked by
+  `services/ranking.ranked_games`, with breakdown, star injuries, weather, rivalry, `net_votes`, and
+  `my_vote`. Public.
+- `GET games/<id>/`: one game. Public.
+- `POST games/<id>/vote/` with `{"value": 1 | -1}`: signed-in users only, CSRF-protected, throttled
+  (`votes`, 30/min). Logic lives in `services/votes.cast_vote`, which re-scores the game.
+- Auth (`apps/accounts`): `csrf/`, `me/`, `register/`, `login/`, `logout/`. These use Django
+  sessions. Register and login are rate-limited per IP.
+- Frontend helpers: `frontend/src/features/community-game-ranker/api.js` (games, votes) and
+  `frontend/src/shared/auth/api.js`. Both go through `frontend/src/shared/http.js`, which handles
+  CSRF. In dev, Vite proxies `/api` to Django (`VITE_API_TARGET`).
 
 ## Rules
 
