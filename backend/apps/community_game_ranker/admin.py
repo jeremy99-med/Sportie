@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    AIRanking,
     CommunityVote,
     ExternalAPIMetadata,
     GameLog,
@@ -79,3 +80,9 @@ class ExternalAPIMetadataAdmin(admin.ModelAdmin):
 class CommunityVoteAdmin(admin.ModelAdmin):
     list_display = ("user", "game", "value", "created_at")
     list_filter = ("value",)
+
+
+@admin.register(AIRanking)
+class AIRankingAdmin(admin.ModelAdmin):
+    list_display = ("game", "rank", "ranked_count", "model", "rated_at")
+    list_select_related = ("game__home_team", "game__away_team", "game__sport")

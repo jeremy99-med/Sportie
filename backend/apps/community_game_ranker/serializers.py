@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CommunityVote, GameLog, Injury, Stadium, Team, WeatherCondition
+from .models import AIRanking, CommunityVote, GameLog, Injury, Stadium, Team, WeatherCondition
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -19,6 +19,12 @@ class WeatherSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeatherCondition
         fields = ["temp_c", "precip_mm", "wind_kph", "condition_text", "fetched_at"]
+
+
+class AIRankingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AIRanking
+        fields = ["rank", "ranked_count", "reason", "model", "rated_at"]
 
 
 class StarInjurySerializer(serializers.ModelSerializer):
@@ -41,6 +47,7 @@ class GameSerializer(serializers.ModelSerializer):
     weather = serializers.SerializerMethodField()
     star_injuries = StarInjurySerializer(many=True, read_only=True)
     rivalry = serializers.SerializerMethodField()
+    ai = serializers.SerializerMethodField()
     net_votes = serializers.IntegerField(read_only=True)
     my_vote = serializers.IntegerField(read_only=True, allow_null=True)
 
@@ -63,6 +70,7 @@ class GameSerializer(serializers.ModelSerializer):
             "weather",
             "star_injuries",
             "rivalry",
+            "ai",
             "net_votes",
             "my_vote",
         ]
@@ -71,6 +79,10 @@ class GameSerializer(serializers.ModelSerializer):
     def get_weather(self, game):
         weather = getattr(game, "weather", None)  # reverse one-to-one: missing raises otherwise
         return WeatherSerializer(weather).data if weather else None
+
+    def get_ai(self, game):
+        ai_ranking = getattr(game, "ai_ranking", None)  # reverse one-to-one, like weather
+        return AIRankingSerializer(ai_ranking).data if ai_ranking else None
 
     def get_rivalry(self, game):
         pair = tuple(sorted((game.home_team_id, game.away_team_id)))

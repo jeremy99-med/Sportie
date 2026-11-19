@@ -43,7 +43,7 @@ class GameViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             ranking.ranked_games(qs)
             .annotate(my_vote=my_vote)
-            .select_related("sport", "home_team", "away_team", "stadium", "weather")
+            .select_related("sport", "home_team", "away_team", "stadium", "weather", "ai_ranking")
             .prefetch_related(Prefetch("injuries", queryset=star_injuries, to_attr="star_injuries"))
         )
 

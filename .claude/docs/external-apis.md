@@ -10,7 +10,7 @@ Scope: NBA and NFL only.
 | balldontlie | NBA games, teams, players | `BALLDONTLIE_API_KEY` | `https://api.balldontlie.io/v1` (some advanced endpoints use `/nba/v1`, `/nba/v2`) | Header `Authorization: <key>` (no `Bearer`) |
 | SportsData.io | NFL games/injuries/standings/rosters/stats; NBA injuries/standings/rosters/stats | `SPORTSDATA_NFL_API_KEY`, `SPORTSDATA_NBA_API_KEY` (one key per sport; separate subscriptions per league) | `https://api.sportsdata.io/v3/{nfl\|nba}/{feed}/json/{Endpoint}` (feed = `scores`, `stats`, `projections`, `odds`) | Header `Ocp-Apim-Subscription-Key: <key>` (or `?key=`; we use the header so keys stay out of URLs/logs) |
 | WeatherAPI.com | Stadium forecast by lat/lon | `WEATHERAPI_KEY` | `https://api.weatherapi.com/v1` | Query param `key` (the only documented method) |
-| Anthropic | Playoff-implication reasoning | `ANTHROPIC_API_KEY` | Use the `claude-api` skill; never hardcode the model ID elsewhere | |
+| Anthropic | Hourly AI rank and reason for today's games (`integrations/claude.py`) | `ANTHROPIC_API_KEY` | Anthropic Python SDK (`anthropic`); use the `claude-api` skill. The model ID lives only in `claude.MODEL` | SDK reads `ANTHROPIC_API_KEY` |
 
 ## Endpoints we use
 

@@ -55,6 +55,14 @@ export default function GameCard({ game, rank, canVote, voting, onVote }) {
           <span aria-label={`Net votes: ${game.net_votes}`}>{game.net_votes}</span>
           {voteButton(-1, "▼", "Downvote")}
         </div>
+        {game.ai && (
+          <p className="w-100 mb-0 small text-secondary border-top pt-2">
+            <span className="text-sp-cyan fw-semibold me-1">
+              AI Insight (#{game.ai.rank} of {game.ai.ranked_count}):
+            </span>
+            {game.ai.reason}
+          </p>
+        )}
       </div>
     </li>
   );
