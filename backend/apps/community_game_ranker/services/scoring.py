@@ -4,14 +4,19 @@ The DB side (gathering inputs, saving `importance_score`) lives in `services/ran
 See `.claude/docs/importance-scoring.md`.
 """
 
-FACTORS = ("playoff", "star_injury", "weather", "momentum", "rivalry", "status", "community")
+FACTORS = ("playoff", "star_injury", "weather", "momentum", "rivalry", "status", "community", "ai")
+
+# Factors that can be absent (None). An absent optional factor is left out of the score, weight
+# and all, instead of counting as 0. `ai` is absent until Claude has ranked the game's day.
+OPTIONAL_FACTORS = frozenset({"ai"})
 
 # Starting weights (approved 2026-10-27; tune later). Weather is always 0 for the indoor leagues.
+# `ai` (approved 2026-11-19) sits on top of the original weights, so they keep their proportions.
 WEIGHTS: dict[str, dict[str, float]] = {
-    "NFL": {"playoff": .30, "star_injury": .15, "weather": .10, "momentum": .15, "rivalry": .15, "status": .05, "community": .10},
-    "NBA": {"playoff": .30, "star_injury": .25, "weather": 0, "momentum": .15, "rivalry": .10, "status": .05, "community": .10},
-    "NHL": {"playoff": .30, "star_injury": .15, "weather": 0, "momentum": .20, "rivalry": .15, "status": .05, "community": .10},
-    "MLB": {"playoff": .25, "star_injury": .15, "weather": .15, "momentum": .15, "rivalry": .15, "status": .05, "community": .10},
+    "NFL": {"playoff": .30, "star_injury": .15, "weather": .10, "momentum": .15, "rivalry": .15, "status": .05, "community": .10, "ai": .15},
+    "NBA": {"playoff": .30, "star_injury": .25, "weather": 0, "momentum": .15, "rivalry": .10, "status": .05, "community": .10, "ai": .15},
+    "NHL": {"playoff": .30, "star_injury": .15, "weather": 0, "momentum": .20, "rivalry": .15, "status": .05, "community": .10, "ai": .15},
+    "MLB": {"playoff": .25, "star_injury": .15, "weather": .15, "momentum": .15, "rivalry": .15, "status": .05, "community": .10, "ai": .15},
 }
 
 INDOOR_SPORTS = {"NBA", "NHL"}
@@ -122,13 +127,40 @@ def community_factor(net_votes: int) -> float:
     return clamp(0.5 + 0.5 * net_votes / (abs(net_votes) + VOTE_SATURATION))
 
 
-def importance(sport: str, factors: dict[str, float]) -> tuple[float, dict[str, float]]:
+def ai_factor(rank: int | None, ranked_count: int | None) -> float | None:
+    """Claude's rank of the game among the day's games: 1 for first, 0 for last.
+
+    None when the game has no AI rank yet, so `importance` leaves the factor out. A day with one
+    game gives 1.
+    """
+    if not rank or not ranked_count:
+        return None
+    if ranked_count == 1:
+        return 1.0
+    return clamp(1 - (rank - 1) / (ranked_count - 1))
+
+
+def importance(sport: str, factors: dict[str, float | None]) -> tuple[float, dict[str, float | None]]:
     """Weighted 0-100 score plus the per-factor breakdown stored in GameLog.score_breakdown.
 
-    Missing factors count as 0.
+    Missing factors count as 0, except OPTIONAL_FACTORS: those are None in the breakdown and
+    their weight is dropped from the total.
     """
     weights = WEIGHTS[sport]
-    breakdown = {name: round(clamp(factors.get(name, 0.0)), 3) for name in FACTORS}
-    total = sum(weights.values())
-    score = 100 * sum(weights[name] * breakdown[name] for name in FACTORS) / total
+    breakdown = {}
+    for name in FACTORS:
+        value = factors.get(name)
+        if value is None and name in OPTIONAL_FACTORS:
+            breakdown[name] = None
+        else:
+            breakdown[name] = round(clamp(value or 0.0), 3)
+    used = [name for name in FACTORS if breakdown[name] is not None]
+    total = sum(weights[name] for name in used)
+    score = 100 * sum(weights[name] * breakdown[name] for name in used) / total if total else 0.0
     return round(score, 2), breakdown
+
+
+def base_importance(sport: str, factors: dict[str, float | None]) -> float:
+    """The score without the AI factor. This is what Claude sees, so its own earlier rank never
+    feeds back into its next one."""
+    return importance(sport, {**factors, "ai": None})[0]

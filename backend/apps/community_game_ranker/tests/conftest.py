@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import anthropic
 import pytest
 import requests
 
@@ -49,6 +50,8 @@ def block_network(monkeypatch):
         raise AssertionError("Tests must not touch the network")
 
     monkeypatch.setattr(requests, "get", refuse)
+    monkeypatch.setattr(anthropic, "Anthropic", refuse)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
 
 @pytest.fixture

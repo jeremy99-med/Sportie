@@ -5,25 +5,26 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
 ## Layout
 
 - `models.py`: Sport, Team, Player, Stadium, TeamStanding, GameLog, Injury, WeatherCondition, Rivalry,
-  ExternalAPIMetadata, CommunityVote. Full field list: `.claude/docs/data-model.md`.
+  ExternalAPIMetadata, AIRanking, CommunityVote. Full field list: `.claude/docs/data-model.md`.
 - `seed/`: reference data. Sports, NBA/NFL teams, stadiums (coordinates for weather lookups),
   and rivalries load in migration `0003_seed_reference_data`, so edit the JSON and add a new
   data migration for changes. `stars.json` holds per-sport `always` / `never` star overrides (at most 5
   stars per team in total) and loads with `python manage.py seed_stars`. Computed stars come from
   `python manage.py sync_rosters` (rosters, trades, and `pick_stars` from season stats).
-- `integrations/`: one module per provider (`balldontlie.py`, `sportsdata.py`, `weatherapi.py`).
+- `integrations/`: one module per provider (`balldontlie.py`, `sportsdata.py`, `weatherapi.py`,
+  `claude.py` for the Anthropic SDK).
   These are thin HTTP clients that return normalized dicts and never touch the ORM.
   See `.claude/docs/external-apis.md`.
 - `services/`: `stars.py` (`pick_stars`, star sync with overrides), `scoring.py` (pure functions, one per factor plus a combiner), `ranking.py` (DB inputs, `score_day`, `ranked_games`),
-  `ingest.py` (cached_call, ingest_day, refresh_live, backfill_finished, sync_rosters; the only module using both clients and the ORM; run with `python manage.py ingest_ranker --date YYYY-MM-DD [--sport NBA] [--backfill]`, or keep current with `python manage.py refresh_ranker [--once] [--interval 300]`, which also rechecks last night's unfinished games and loads the rest of the site's 11-day window), `ai_assist.py` (Claude call for playoff
-  implications). See `.claude/docs/importance-scoring.md`.
+  `ingest.py` (cached_call, ingest_day, refresh_live, backfill_finished, sync_rosters; the only module using both clients and the ORM; run with `python manage.py ingest_ranker --date YYYY-MM-DD [--sport NBA] [--backfill]`, or keep current with `python manage.py refresh_ranker [--once] [--interval 300]`, which also rechecks last night's unfinished games and loads the rest of the site's 11-day window), `ai_assist.py` (hourly Claude rank + reason for today's games,
+  run from `refresh_ranker` or `python manage.py rank_ai [--date]`). See `.claude/docs/importance-scoring.md`.
 - `tests/`: mirrors the modules (`test_scoring.py`, `test_integrations.py`, `test_votes.py`, ...).
 
 ## API (`/api/ranker/`, auth at `/api/auth/`)
 
 - `GET games/?date=YYYY-MM-DD&sport=NBA`: the day's games (US Eastern, default today), ranked by
-  `services/ranking.ranked_games`, with breakdown, star injuries, weather, rivalry, `net_votes`, and
-  `my_vote`. Public.
+  `services/ranking.ranked_games`, with breakdown, star injuries, weather, rivalry, `ai` (Claude's
+  rank and reason, or null), `net_votes`, and `my_vote`. Public.
 - `GET games/<id>/`: one game. Public.
 - `POST games/<id>/vote/` with `{"value": 1 | -1}`: signed-in users only, CSRF-protected, throttled
   (`votes`, 30/min). Logic lives in `services/votes.cast_vote`, which re-scores the game.
@@ -38,6 +39,8 @@ Ranks the day's NFL, NBA, NHL, and MLB games so fans know which ones to watch.
 - Scoring functions are pure: plain values in, a float out, no DB access. That keeps them cheap
   to unit test.
 - Weather weight is 0 for NBA and NHL, which play indoors.
+- What Claude sees for a game must never include its own earlier AI rank or reason
+  (`ai_assist.game_summary`).
 - Votes: one per (user, game), and the user must be logged in. Sending the same vote again
   removes it. Sending the opposite vote flips it.
 - Any page that shows injuries or importance needs the gambling disclaimer

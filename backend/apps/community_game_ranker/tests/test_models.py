@@ -261,3 +261,17 @@ def test_vote_str_and_cascade(user, game):
     assert str(vote) == f"fan +1 on game {game.pk}"
     user.delete()
     assert not CommunityVote.objects.exists()
+
+
+# AIRanking
+
+
+def test_ai_ranking_one_per_game_and_rank_within_count(game):
+    from apps.community_game_ranker.models import AIRanking
+
+    ai = AIRanking.objects.create(game=game, rank=2, ranked_count=3, reason="Close race.", model="m")
+    assert game.ai_ranking == ai
+    assert str(ai) == f"#2 of 3: {game}"
+    assert_integrity_error(lambda: AIRanking.objects.create(game=game, rank=1, ranked_count=3, reason="x", model="m"))
+    ai.delete()
+    assert_integrity_error(lambda: AIRanking.objects.create(game=game, rank=4, ranked_count=3, reason="x", model="m"))
