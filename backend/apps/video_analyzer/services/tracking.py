@@ -3,6 +3,7 @@ from .detection import COCO_PERSON, COCO_SPORTS_BALL, IMAGE_SIZE, load_model
 PLAYER_MIN_CONFIDENCE = 0.3
 BALL_MIN_CONFIDENCE = 0.15
 MAX_BALL_GAP = 5
+FRAME_STEP = 3  # only track every 3rd frame, to be faster
 
 
 def track_frame(model, frame, frame_number):
@@ -22,17 +23,21 @@ def track_frame(model, frame, frame_number):
 
 
 def track_video(video_path):
-    """Tracks every frame of a video."""
+    """Tracks every FRAME_STEP-th frame of a video."""
     import cv2
 
     model = load_model()
     video = cv2.VideoCapture(str(video_path))
+    total = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     all_frames = []
-    while True:
-        ok, frame = video.read()
-        if not ok:
-            break
-        all_frames.append(track_frame(model, frame, len(all_frames)))
+    frame_number = 0
+    while video.grab():
+        if frame_number % FRAME_STEP == 0:
+            ok, frame = video.retrieve()
+            all_frames.append(track_frame(model, frame, frame_number))
+            if len(all_frames) % 20 == 0:
+                print(f"Tracking frame {frame_number} of {total}", flush=True)
+        frame_number += 1
     video.release()
     fill_ball_gaps(all_frames)
     return all_frames

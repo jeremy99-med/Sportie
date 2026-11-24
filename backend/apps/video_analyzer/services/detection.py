@@ -1,5 +1,5 @@
 MODEL_FILE = "yolo11n.pt"
-IMAGE_SIZE = 1920  # the default 640 misses players in wide shots
+IMAGE_SIZE = 1280  # the default 640 misses players in wide shots; 1920 is too slow
 COCO_PERSON = 0
 COCO_SPORTS_BALL = 32
 

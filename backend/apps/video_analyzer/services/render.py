@@ -1,11 +1,15 @@
+import os
+import subprocess
+
 import cv2
+import imageio_ffmpeg
 import numpy as np
 
 SCALE = 30  # pixels per meter
 WIDTH = 40 * SCALE
 HEIGHT = 20 * SCALE
 
-# OpenCV colors are (blue, green, red)
+# OpenCV colors (blue, green, red)
 GREEN = (60, 120, 60)
 WHITE = (255, 255, 255)
 YELLOW = (0, 255, 255)
@@ -29,8 +33,16 @@ def draw_frame(players, ball):
 
 
 def save_video(all_frames, output_path, fps):
-    """Draws every frame and saves them as an .mp4 video."""
-    video = cv2.VideoWriter(str(output_path), cv2.VideoWriter_fourcc(*"mp4v"), fps, (WIDTH, HEIGHT))
+    """Draws every frame and saves them as an .mp4 video that browsers can play."""
+    # OpenCV can't make H.264 (the format browsers need), so save a temporary video first,
+    # then convert it with ffmpeg.
+    temp_path = str(output_path) + ".tmp.mp4"
+    video = cv2.VideoWriter(temp_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (WIDTH, HEIGHT))
     for frame in all_frames:
         video.write(draw_frame(frame["players"], frame["ball"]))
     video.release()
+
+    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", temp_path, "-vcodec", "libx264",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output_path)], check=True)
+    os.remove(temp_path)

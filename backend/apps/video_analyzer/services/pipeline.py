@@ -46,10 +46,15 @@ def analyze(upload):
 
     # 2. Get each player's jersey color the first time they show up, then split the teams.
     video = cv2.VideoCapture(video_path)
-    fps = video.get(cv2.CAP_PROP_FPS) or 30
+    fps = (video.get(cv2.CAP_PROP_FPS) or 30) / tracking.FRAME_STEP  # tracked frames per second
     colors = {}
+    frame_number = 0
     for frame_info in tracked:
+        while frame_number < frame_info["frame"]:  # skip the frames that weren't tracked
+            video.grab()
+            frame_number += 1
         ok, frame = video.read()
+        frame_number += 1
         if not ok:
             break
         for player in frame_info["players"]:
