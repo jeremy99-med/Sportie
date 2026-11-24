@@ -33,7 +33,7 @@ def _standing(standings, team_id):
     return {"wins": s.wins, "losses": s.losses, "ties": s.ties, "conference_rank": s.conference_rank}
 
 
-def _recent_results(team_id, before):
+def recent_results(team_id, before):
     """The team's last finished games before `before`, most recent first: 1 win, 0 loss, 0.5 tie."""
     games = (
         GameLog.objects.filter(Q(home_team_id=team_id) | Q(away_team_id=team_id))
@@ -69,6 +69,7 @@ def game_factors(game):
     weather = getattr(game, "weather", None)
     rivalry = Rivalry.between(game.home_team, game.away_team)
     net_votes = game.votes.aggregate(net=Coalesce(Sum("value"), 0))["net"]
+    ai_ranking = getattr(game, "ai_ranking", None)
 
     return {
         "playoff": scoring.playoff_factor(
@@ -90,12 +91,13 @@ def game_factors(game):
             else None,
         ),
         "momentum": scoring.momentum_factor(
-            _recent_results(game.home_team_id, game.scheduled_at),
-            _recent_results(game.away_team_id, game.scheduled_at),
+            recent_results(game.home_team_id, game.scheduled_at),
+            recent_results(game.away_team_id, game.scheduled_at),
         ),
         "rivalry": scoring.rivalry_factor(rivalry.intensity if rivalry else None),
         "status": scoring.status_factor(game.status),
         "community": scoring.community_factor(net_votes),
+        "ai": scoring.ai_factor(ai_ranking.rank, ai_ranking.ranked_count) if ai_ranking else None,
     }
 
 
@@ -111,7 +113,9 @@ def score_game(game):
 
 def score_day(day, sport=None):
     """Score every game on `day` (US Eastern). Returns the number scored."""
-    games = games_on(day, sport).select_related("sport", "home_team", "away_team", "stadium", "weather")
+    games = games_on(day, sport).select_related(
+        "sport", "home_team", "away_team", "stadium", "weather", "ai_ranking"
+    )
     count = 0
     for game in games:
         score_game(game)

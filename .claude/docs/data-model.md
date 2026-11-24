@@ -20,7 +20,8 @@ Implemented in `backend/apps/community_game_ranker/models.py` (migrations `0001_
 | Injury | `status` (TextChoices out/doubtful/questionable), `status_estimated` (bool, true when trial data hid the real status), `description` (blank ok), `reported_at` | FK Player (CASCADE, `injuries`), FK GameLog (CASCADE, `injuries`); unique (player, game) |
 | WeatherCondition | `temp_c`, `precip_mm` (≥0), `snow_cm` (≥0), `wind_kph` (≥0), `condition_text`, `fetched_at` | OneToOne GameLog (CASCADE, `weather`) |
 | Rivalry | `intensity` (1-5, DB check), `name` (optional) | FK team_a, FK team_b (CASCADE); `save()` normalizes so team_a_id < team_b_id (also a DB check); unique (team_a, team_b); `Rivalry.between(t1, t2)` looks up either order |
-| ExternalAPIMetadata | `provider` (TextChoices balldontlie/sportsdata/weatherapi), `endpoint`, `params_hash` (sha256 hex), `response?` (JSON), `fetched_at`, `status_code` | Response cache and audit log; unique (provider, endpoint, params_hash); `hash_params(dict)` gives a key-order-independent hash |
+| ExternalAPIMetadata | `provider` (TextChoices balldontlie/sportsdata/weatherapi/anthropic), `endpoint`, `params_hash` (sha256 hex), `response?` (JSON), `fetched_at`, `status_code` | Response cache and audit log (for `anthropic`, the last hourly AI run per day); unique (provider, endpoint, params_hash); `hash_params(dict)` gives a key-order-independent hash |
+| AIRanking | `rank` (≥1), `ranked_count` (≥1), `reason` (text), `model`, `rated_at` | OneToOne GameLog (CASCADE, `ai_ranking`); DB check `1 ≤ rank ≤ ranked_count`. Claude's latest rank for the game among its day's games; the day's rows are replaced together by `services/ai_assist.py` |
 | CommunityVote | `value` (IntegerChoices +1 / -1, DB check), `created_at` | FK User (CASCADE, `game_votes`), FK GameLog (CASCADE, `votes`); unique (user, game). Same vote again removes it, opposite vote flips it (`services/votes.py`) |
 
 ## video_analyzer

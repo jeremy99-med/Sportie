@@ -168,3 +168,35 @@ def test_importance_weather_has_no_effect_on_nba_but_does_on_nfl():
 
 def test_importance_clamps_out_of_range_factors():
     assert importance("NBA", {"playoff": 7.0})[1]["playoff"] == 1.0
+
+
+# AI factor
+
+
+def test_ai_factor_boundaries():
+    from apps.community_game_ranker.services.scoring import ai_factor
+
+    assert ai_factor(1, 5) == 1.0
+    assert ai_factor(5, 5) == 0.0
+    assert ai_factor(3, 5) == 0.5
+    assert ai_factor(1, 1) == 1.0
+    assert ai_factor(None, None) is None and ai_factor(1, 0) is None
+
+
+def test_ai_weight_is_015_for_every_sport():
+    assert all(weights["ai"] == 0.15 for weights in WEIGHTS.values())
+
+
+def test_missing_ai_factor_is_left_out_not_counted_as_zero():
+    others = {f: 0.6 for f in FACTORS if f != "ai"}
+    score, breakdown = importance("NBA", others)
+    assert score == 60.0 and breakdown["ai"] is None
+    assert importance("NBA", {**others, "ai": 1.0})[0] > score
+    assert importance("NBA", {**others, "ai": 0.0})[0] < score
+
+
+def test_base_importance_ignores_the_ai_factor():
+    from apps.community_game_ranker.services.scoring import base_importance
+
+    others = {f: 0.6 for f in FACTORS if f != "ai"}
+    assert base_importance("NFL", {**others, "ai": 1.0}) == base_importance("NFL", {**others, "ai": 0.0}) == 60.0

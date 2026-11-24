@@ -262,6 +262,7 @@ class ExternalAPIMetadata(models.Model):
         BALLDONTLIE = "balldontlie", "balldontlie"
         SPORTSDATA = "sportsdata", "SportsData.io"
         WEATHERAPI = "weatherapi", "WeatherAPI"
+        ANTHROPIC = "anthropic", "Anthropic"
 
     provider = models.CharField(max_length=20, choices=Provider.choices)
     endpoint = models.CharField(max_length=255)
@@ -288,6 +289,33 @@ class ExternalAPIMetadata(models.Model):
         """Stable sha256 of a params dict, independent of key order."""
         payload = json.dumps(params or {}, sort_keys=True, separators=(",", ":"), default=str)
         return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class AIRanking(models.Model):
+    """Claude's latest rank and explanation for one game, from the hourly run over its day.
+
+    Replaced as a whole on each run that sees changed inputs (`services/ai_assist.py`).
+    """
+
+    game = models.OneToOneField(GameLog, on_delete=models.CASCADE, related_name="ai_ranking")
+    # 1 = most important game of the day.
+    rank = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    # How many games were ranked together, so the factor can be computed from the rank.
+    ranked_count = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    reason = models.TextField()
+    model = models.CharField(max_length=64)
+    rated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["rank"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(rank__gte=1, rank__lte=F("ranked_count")), name="ai_rank_within_count"
+            ),
+        ]
+
+    def __str__(self):
+        return f"#{self.rank} of {self.ranked_count}: {self.game}"
 
 
 class CommunityVote(models.Model):

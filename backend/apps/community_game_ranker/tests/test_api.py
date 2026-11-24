@@ -90,6 +90,16 @@ def test_list_is_public_and_ranked(anon, games):
     assert first["home_team"]["abbreviation"] == "BOS"
     assert first["rivalry"] == {"name": "Celtics-Lakers", "intensity": 5}
     assert first["my_vote"] is None and first["net_votes"] == 0
+    assert first["ai"] is None
+
+
+def test_list_includes_the_ai_take(anon, games):
+    from apps.community_game_ranker.models import AIRanking
+
+    AIRanking.objects.create(game=games["high"], rank=1, ranked_count=3, reason="Rivalry night.", model="m")
+    by_id = {g["id"]: g for g in anon.get(URL, {"date": DAY.isoformat()}).json()}
+    assert by_id[games["high"].id]["ai"]["reason"] == "Rivalry night."
+    assert by_id[games["high"].id]["ai"]["rank"] == 1
 
 
 def test_list_filters_by_sport(anon, games):
