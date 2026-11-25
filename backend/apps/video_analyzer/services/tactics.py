@@ -33,9 +33,18 @@ def closest_to_ball(players, ball):
 
 
 def suggest(players, ball):
-    """Suggests passes from the player with the ball to open teammates."""
-    if len(players) == 0 or ball is None:
+    """Suggests passes from the player with the ball to open teammates.
+
+    If the ball wasn't found, it just lists the open players.
+    """
+    if len(players) == 0:
         return []
+
+    if ball is None:
+        suggestions = []
+        for player in open_players(players):
+            suggestions.append({"text": f"#{player['id']} (team {player['team']}) is open."})
+        return suggestions
 
     carrier = closest_to_ball(players, ball)
     suggestions = []
