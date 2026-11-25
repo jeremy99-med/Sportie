@@ -19,7 +19,7 @@ const features = [
 
 const RANKER_HASH = "#community-game-ranker";
 
-// Feature pages that are ready to open. A card without an entry here isn't clickable yet.
+// Feature pages that open inside this app.
 const pages = {
   "video-analyzer": VideoAnalyzerPage,
 };
@@ -64,19 +64,7 @@ export default function App() {
           <article className="col-12 col-lg-6" key={feature.path}>
             <div className="card h-100 border-0 shadow-sm">
               <div className="card-body p-4">
-                <h2 className="h4 card-title text-sp-green">
-                  {pages[feature.path] ? (
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 text-reset text-decoration-none fs-4 fw-medium stretched-link"
-                      onClick={() => setCurrentPage(feature.path)}
-                    >
-                      {feature.name}
-                    </button>
-                  ) : (
-                    feature.name
-                  )}
-                </h2>
+                <h2 className="h4 card-title text-sp-green">{feature.name}</h2>
                 <p className="card-text text-secondary">
                   {feature.description}
                 </p>
@@ -85,7 +73,13 @@ export default function App() {
                     View today's games
                   </a>
                 ) : (
-                  <span className="badge text-bg-light">{feature.path}</span>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setCurrentPage(feature.path)}
+                  >
+                    Analyze a video
+                  </button>
                 )}
               </div>
             </div>

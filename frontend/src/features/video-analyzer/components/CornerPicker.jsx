@@ -31,7 +31,12 @@ export default function CornerPicker({ upload, onStarted }) {
   }
 
   if (!upload.first_frame_url) {
-    return <div className="alert alert-warning">The server couldn't make a preview picture.</div>;
+    return (
+      <div className="alert alert-warning">
+        The server couldn't make a preview picture because the video tools aren't installed. Start
+        the app with <code>just up-video</code>, then upload the video again.
+      </div>
+    );
   }
 
   return (
