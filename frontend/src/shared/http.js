@@ -27,15 +27,17 @@ export class ApiError extends Error {
 
 export async function apiFetch(path, { method = "GET", body, params } = {}) {
   const url = params ? `${path}?${new URLSearchParams(params)}` : path;
+  // FormData (file uploads) goes as-is so the browser sets the multipart boundary itself.
+  const isForm = body instanceof FormData;
   const headers = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (UNSAFE_METHODS.has(method)) headers["X-CSRFToken"] = await csrfToken();
 
   const response = await fetch(url, {
     method,
     headers,
     credentials: "include",
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined || isForm ? body : JSON.stringify(body),
   });
   const data = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) throw new ApiError(response.status, data);

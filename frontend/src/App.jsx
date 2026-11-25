@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import GameRanker from "./features/community-game-ranker/components/GameRanker.jsx";
+import VideoAnalyzerPage from "./features/video-analyzer/components/VideoAnalyzerPage.jsx";
 
 const features = [
   {
@@ -18,8 +19,14 @@ const features = [
 
 const RANKER_HASH = "#community-game-ranker";
 
+// Feature pages that are ready to open. A card without an entry here isn't clickable yet.
+const pages = {
+  "video-analyzer": VideoAnalyzerPage,
+};
+
 export default function App() {
   const [hash, setHash] = useState(window.location.hash);
+  const [currentPage, setCurrentPage] = useState(null);
 
   useEffect(() => {
     const onHashChange = () => setHash(window.location.hash);
@@ -38,6 +45,11 @@ export default function App() {
     );
   }
 
+  const Page = pages[currentPage];
+  if (Page) {
+    return <Page onBack={() => setCurrentPage(null)} />;
+  }
+
   return (
     <main className="container py-5">
       <header className="mb-5">
@@ -52,7 +64,19 @@ export default function App() {
           <article className="col-12 col-lg-6" key={feature.path}>
             <div className="card h-100 border-0 shadow-sm">
               <div className="card-body p-4">
-                <h2 className="h4 card-title text-sp-green">{feature.name}</h2>
+                <h2 className="h4 card-title text-sp-green">
+                  {pages[feature.path] ? (
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-reset text-decoration-none fs-4 fw-medium stretched-link"
+                      onClick={() => setCurrentPage(feature.path)}
+                    >
+                      {feature.name}
+                    </button>
+                  ) : (
+                    feature.name
+                  )}
+                </h2>
                 <p className="card-text text-secondary">
                   {feature.description}
                 </p>

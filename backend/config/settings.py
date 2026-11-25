@@ -82,6 +82,8 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+# Uploaded videos (served only to their owner through the video API).
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # The React app is served through the Vite proxy on the same origin, so plain Django sessions

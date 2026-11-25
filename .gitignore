@@ -9,3 +9,17 @@ dist/
 coverage/
 *.log
 .claude/settings.local.json
+
+# Uploaded videos, test videos, and model weights (never commit)
+backend/media/
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.mkv
+*.webm
+*.pt
+runs/
+detections.jpg
+frontend/package-lock.json
